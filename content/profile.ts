@@ -13,13 +13,22 @@ export const profile = {
   email: "legmaparfait6@gmail.com",
   phone: { display: "+226 72 61 81 67", href: "+22672618167" },
   github: { user: "legmaparfait6-jpg", url: "https://github.com/legmaparfait6-jpg" },
+  photo: {
+    src: "/profile/legma-parfait.webp",
+    width: 612,
+    height: 765,
+    alt: {
+      fr: "Portrait de Legma Parfait, en col roulé noir sur fond gris",
+      en: "Portrait of Legma Parfait wearing a black turtleneck on a grey background",
+    } satisfies L,
+  },
   cv: {
     fr: "/cv/Legma-Parfait-CV-FR.pdf",
     en: "/cv/Legma-Parfait-CV-EN.pdf",
   } satisfies L,
   education: {
     degree: { fr: "Licence 3 — Informatique de Gestion", en: "Bachelor's degree (3rd year) — Business Computing" } satisfies L,
-    school: { fr: "Université de l'Unité Africaine (UA), ex-IAM", en: "Université de l'Unité Africaine (UA), formerly IAM" } satisfies L,
+    school: { fr: "Université de l'Unité Africaine (UA), ex‑IAM", en: "Université de l'Unité Africaine (UA), formerly IAM" } satisfies L,
     period: "2025–2026",
   },
   languages: [

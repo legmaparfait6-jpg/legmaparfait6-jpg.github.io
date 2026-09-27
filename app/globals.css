@@ -548,8 +548,14 @@ button {
 }
 
 @media (max-width: 379px) {
+  /* Masqué à l'écran mais conservé pour les lecteurs d'écran. */
   .brand__name {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
@@ -785,6 +791,21 @@ button {
   from {
     opacity: 0;
     transform: translateY(14px);
+  }
+}
+
+/* Titres principaux : visibles dès le premier affichage (mesure LCP),
+   seul un léger glissement les anime. */
+@keyframes rise-soft {
+  from {
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero__intro > .hero__title,
+  .mission-hero > .container > .mission-hero__title {
+    animation-name: rise-soft;
   }
 }
 

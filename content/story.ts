@@ -68,7 +68,7 @@ export const about = {
   } satisfies L,
   paragraphs: [
     {
-      fr: "Je suis étudiant en Licence 3 d'Informatique de Gestion à l'Université de l'Unité Africaine (ex-IAM), à Ouagadougou.",
+      fr: "Je suis étudiant en Licence 3 d'Informatique de Gestion à l'Université de l'Unité Africaine (ex‑IAM), à Ouagadougou.",
       en: "I am a final-year Business Computing student at the Université de l'Unité Africaine (formerly IAM) in Ouagadougou.",
     },
     {
@@ -304,7 +304,7 @@ export const journey = {
   steps: [
     {
       name: { fr: "Formation", en: "Education" },
-      text: { fr: "Licence 3 Informatique de Gestion — Université de l'Unité Africaine (ex-IAM).", en: "BSc Business Computing — Université de l'Unité Africaine (formerly IAM)." },
+      text: { fr: "Licence 3 Informatique de Gestion — Université de l'Unité Africaine (ex‑IAM).", en: "BSc Business Computing — Université de l'Unité Africaine (formerly IAM)." },
       date: "2025–2026",
     },
     {

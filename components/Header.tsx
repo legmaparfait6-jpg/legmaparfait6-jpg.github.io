@@ -74,7 +74,8 @@ export function Header({ lang }: { lang: Lang }) {
   return (
     <header className="header" data-scrolled={scrolled || undefined}>
       <div className="container header__inner">
-        <Link href={`/${lang}/`} className="brand" aria-label={`${profile.name} — ${t(nav[0]!.label, lang)}`}>
+        {/* Le nom accessible reprend le texte visible (critère WCAG 2.5.3). */}
+        <Link href={`/${lang}/`} className="brand">
           <span className="brand__mark" aria-hidden="true">
             LP
           </span>

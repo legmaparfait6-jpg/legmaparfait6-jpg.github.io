@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Un seul observateur pour toute la page : chaque élément [data-reveal]
@@ -9,6 +9,12 @@ import { useEffect } from "react";
  */
 export function RevealObserver() {
   const pathname = usePathname();
+  const firstPath = useRef(pathname);
+
+  // Après la première navigation interne, les pages jouent leur transition d'entrée.
+  useEffect(() => {
+    if (pathname !== firstPath.current) document.documentElement.classList.add("has-navigated");
+  }, [pathname]);
 
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>("[data-reveal]:not([data-visible])");

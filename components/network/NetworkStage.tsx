@@ -74,11 +74,25 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         emit("net:ready", { enabled: true });
       });
     };
-    // Pendant l'écran d'amorçage, la scène démarre à l'ouverture des volets.
-    // Safari n'a pas requestIdleCallback : repli sur un court délai.
-    const intro = document.documentElement.classList.contains("is-intro");
-    const idle = !intro && typeof window.requestIdleCallback === "function";
-    const handle = idle ? window.requestIdleCallback(load, { timeout: 1200 }) : window.setTimeout(load, intro ? 850 : 250);
+    // La scène ne concurrence jamais le premier affichage : elle démarre après
+    // le chargement complet de la page, puis quand le navigateur est libre.
+    // Sur mobile (processeur plus lent), elle attend davantage.
+    // Safari n'a pas requestIdleCallback : repli sur un délai.
+    const mobile = window.innerWidth < 768;
+    const idle = typeof window.requestIdleCallback === "function";
+    let timer = 0;
+    let idleHandle = 0;
+    const schedule = () => {
+      timer = window.setTimeout(
+        () => {
+          if (idle) idleHandle = window.requestIdleCallback(load, { timeout: 2000 });
+          else load();
+        },
+        mobile ? 2500 : 600,
+      );
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
 
     const onLost = (e: Event) => {
       e.preventDefault();
@@ -91,8 +105,9 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
 
     return () => {
       disposed = true;
-      if (idle) window.cancelIdleCallback(handle);
-      else window.clearTimeout(handle);
+      window.removeEventListener("load", schedule);
+      window.clearTimeout(timer);
+      if (idleHandle) window.cancelIdleCallback(idleHandle);
       canvas?.removeEventListener("webglcontextlost", onLost);
       engineRef.current?.dispose();
       engineRef.current = null;

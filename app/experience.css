@@ -124,11 +124,155 @@
   }
 }
 
+/* ----- portrait : fiche d'identité ----- */
+
+.about__aside {
+  display: grid;
+  gap: 32px;
+  align-content: start;
+}
+
+/* Le texte garde son rythme même quand la colonne du portrait est plus haute. */
+.about__text {
+  align-content: start;
+}
+
+.portrait {
+  display: grid;
+  gap: 14px;
+  max-width: 360px;
+}
+
+.portrait__frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.portrait__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fondu vers le fond du site en bas du cadre. */
+.portrait__frame::after {
+  content: "";
+  position: absolute;
+  inset: 55% 0 0;
+  background: linear-gradient(transparent, rgb(10 11 13 / 0.55));
+  pointer-events: none;
+}
+
+.portrait__corner {
+  position: absolute;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border-color: var(--signal);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.85;
+}
+
+.portrait__corner--tl {
+  top: 10px;
+  left: 10px;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.portrait__corner--tr {
+  top: 10px;
+  right: 10px;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.portrait__corner--bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+
+.portrait__corner--br {
+  bottom: 10px;
+  right: 10px;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.portrait__scan {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: var(--signal);
+  box-shadow: 0 0 16px 2px rgb(61 220 132 / 0.6);
+  opacity: 0;
+}
+
+.portrait__caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Identification : l'image se dévoile de haut en bas derrière la ligne de balayage. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .portrait__frame img {
+    clip-path: inset(0 0 100% 0);
+  }
+
+  .js .portrait[data-visible] .portrait__frame img {
+    animation: portrait-reveal 1.1s cubic-bezier(0.65, 0, 0.35, 1) 150ms forwards;
+  }
+
+  .js .portrait[data-visible] .portrait__scan {
+    animation: portrait-scan 1.1s cubic-bezier(0.65, 0, 0.35, 1) 150ms forwards;
+  }
+}
+
+@keyframes portrait-reveal {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes portrait-scan {
+  0% {
+    top: 0;
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 2px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 899px) {
+  .portrait {
+    max-width: 300px;
+  }
+}
+
 /* ----- transitions de page ----- */
 
+/* Uniquement lors d'un changement de page : le premier affichage n'est
+   jamais retardé. */
 @media (prefers-reduced-motion: no-preference) {
-  .page-enter {
-    animation: page-enter 620ms var(--ease-out) both;
+  .has-navigated .page-enter {
+    animation: page-enter 560ms var(--ease-out) both;
   }
 }
 
@@ -136,7 +280,6 @@
   from {
     opacity: 0;
     transform: translateY(14px);
-    filter: blur(4px);
   }
 }
 

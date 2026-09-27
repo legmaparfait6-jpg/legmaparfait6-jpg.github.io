@@ -23,6 +23,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     email: `mailto:${profile.email}`,
     telephone: profile.phone.href,
     url: `${SITE_URL}/${lang}/`,
+    image: `${SITE_URL}${profile.photo.src}`,
     sameAs: [profile.github.url],
     address: { "@type": "PostalAddress", addressLocality: "Ouagadougou", addressCountry: "BF" },
     alumniOf: { "@type": "CollegeOrUniversity", name: "Université de l'Unité Africaine" },

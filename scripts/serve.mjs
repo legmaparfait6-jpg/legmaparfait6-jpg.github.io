@@ -5,6 +5,7 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createGzip } from "node:zlib";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)), "out");
 const PORT = Number(process.argv[2] ?? process.env.PORT ?? 4173);
@@ -45,8 +46,18 @@ export function startServer(port = PORT) {
     const file = resolveFile(url.pathname);
     const status = file ? 200 : 404;
     const path = file ?? join(ROOT, "404.html");
-    res.writeHead(status, { "Content-Type": TYPES[extname(path)] ?? "application/octet-stream" });
-    createReadStream(path).pipe(res);
+    const type = TYPES[extname(path)] ?? "application/octet-stream";
+    // Comme GitHub Pages : compression gzip et cache de 10 minutes, sauf pour
+    // les pages HTML, toujours revalidées (sinon une page modifiée resterait
+    // en cache pendant les tests).
+    const compress = /text|javascript|json|xml|svg/.test(type) && /\bgzip\b/.test(req.headers["accept-encoding"] ?? "");
+    res.writeHead(status, {
+      "Content-Type": type,
+      "Cache-Control": type.startsWith("text/html") ? "no-cache" : "max-age=600",
+      ...(compress ? { "Content-Encoding": "gzip", Vary: "Accept-Encoding" } : {}),
+    });
+    const stream = createReadStream(path);
+    (compress ? stream.pipe(createGzip()) : stream).pipe(res);
   });
   return new Promise((ok) => server.listen(port, () => ok(server)));
 }
