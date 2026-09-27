@@ -22,10 +22,11 @@ export type BusEvents = {
 };
 
 /**
- * État partagé minimal : la scène 3D est-elle active ? Quel est le niveau
- * de la voix en cours de lecture (0 à 1) ? Une transmission est-elle en cours ?
+ * État partagé minimal : la scène 3D est-elle active ? Ouverture de la bouche
+ * (0 à 1) et forme des lèvres (0 arrondies, 1 étirées) pendant une annonce ;
+ * une transmission est-elle en cours ?
  */
-export const runtime = { net: false, voiceLevel: 0, voiceActive: false };
+export const runtime = { net: false, voiceLevel: 0, mouthShape: 0.5, voiceActive: false };
 
 type Name = keyof BusEvents;
 

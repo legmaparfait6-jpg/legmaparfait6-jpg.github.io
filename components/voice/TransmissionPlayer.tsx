@@ -33,7 +33,7 @@ export function TransmissionPlayer({ lang, items }: { lang: Lang; items: PlayerI
       on("voice:state", setState),
       on("voice:play", ({ id }) => {
         const item = items.find((i) => i.id === id);
-        if (item && isVoiceSupported()) void playTransmission(item.id, lang, item.lines);
+        if (item && isVoiceSupported()) void playTransmission(item.id, lang);
       }),
       on("voice:guided", ({ enabled }) => setGuided(enabled)),
     ];

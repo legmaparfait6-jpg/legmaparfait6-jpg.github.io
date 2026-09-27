@@ -1,36 +1,71 @@
 /**
- * Portrait en nuage de points, attaché à la caméra : il reste de face, en
+ * Visage en particules, attaché à la caméra : il reste de face, en
  * arrière-plan, quelle que soit la formation du réseau.
  *
- * - Assemblage de haut en bas depuis le réseau, dispersion quand il n'est plus utile.
- * - Relief : le visage est bombé comme un volume, et oscille légèrement pour
- *   révéler sa profondeur.
- * - Parole : pendant une transmission, la mâchoire et la lèvre inférieure
- *   s'ouvrent au rythme des syllabes ; le visage s'illumine.
- * - Balayage : une ligne lumineuse parcourt régulièrement le visage.
+ * - Volume réel : les particules du visage reposent sur le maillage 3D
+ *   extrait de la photo (voir portrait-build.ts).
+ * - Parole : la mâchoire, les lèvres (étirées ou arrondies) et l'intérieur
+ *   de la bouche suivent les pistes calculées sur l'annonce audio.
+ * - Vie : clignements, respiration, tête qui se tourne vers le pointeur
+ *   (ou le doigt), léger hochement pendant la parole.
+ * - Maillage filaire holographique, révélé par une ligne de balayage.
  * Tout le mouvement est calculé sur la carte graphique.
  */
-import { AdditiveBlending, BufferAttribute, BufferGeometry, Points, ShaderMaterial, Vector3 } from "three";
+import {
+  AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  LineSegments,
+  Points,
+  ShaderMaterial,
+  Vector2,
+  Vector3,
+} from "three";
+import type { PortraitData } from "./portrait-build";
+
+const COMMON = /* glsl */ `
+  attribute vec3 aJaw;
+  attribute vec3 aShape;
+  attribute vec3 aBlink;
+  uniform float uOpen;
+  uniform float uShape;
+  uniform float uBlink;
+  uniform vec2 uHeadRot;
+  uniform vec3 uPivot;
+  uniform float uTime;
+
+  vec3 rig(vec3 base, float headWeight) {
+    vec3 p = base + aJaw * uOpen + aShape * uShape + aBlink * uBlink;
+    vec3 q = p - uPivot;
+    float yaw = uHeadRot.x * headWeight;
+    float pitch = uHeadRot.y * headWeight;
+    float cy = cos(yaw), sy = sin(yaw);
+    q = vec3(cy * q.x + sy * q.z, q.y, -sy * q.x + cy * q.z);
+    float cp = cos(pitch), sp = sin(pitch);
+    q = vec3(q.x, cp * q.y - sp * q.z, sp * q.y + cp * q.z);
+    return uPivot + q;
+  }
+`;
 
 const VERTEX = /* glsl */ `
+  ${COMMON}
   attribute vec3 aStart;
   attribute float aDelay;
+  attribute vec3 aColor;
   attribute float aIntensity;
-  attribute float aJaw;
-  attribute float aUpper;
-  attribute float aFace;
+  attribute float aHead;
+  attribute float aKind;
   uniform float uProgress;
   uniform float uScatter;
-  uniform float uVoice;
-  uniform float uTime;
   uniform float uScanY;
   uniform float uPixelRatio;
   uniform float uOpacity;
-  uniform vec3 uPointer;
-  uniform float uPointerOn;
+  uniform float uSize;
+  uniform float uVoice;
+  uniform float uDensity;
   varying float vAlpha;
-  varying float vIntensity;
-  varying float vScan;
+  varying vec3 vColor;
 
   float easeInOut(float t) {
     return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
@@ -39,126 +74,106 @@ const VERTEX = /* glsl */ `
   void main() {
     float t = clamp((uProgress - aDelay) / 0.6, 0.0, 1.0);
     float e = easeInOut(t);
-    vec3 target = position;
-
-    // Parole : la mâchoire descend, la lèvre supérieure se relève à peine.
-    target.y -= uVoice * aJaw * 0.26;
-    target.z += uVoice * aJaw * 0.08;
-    target.y += uVoice * aUpper * 0.035;
-
+    vec3 target = rig(position, aHead);
+    // Respiration : la silhouette se soulève à peine.
+    target.y += sin(uTime * 1.3) * 0.02 * (1.0 - aHead * 0.5);
     vec3 p = mix(aStart, target, e);
-
-    // Respiration : ondulation lente de la profondeur.
-    p.z += sin(uTime * 1.1 + position.y * 2.6 + position.x * 1.7) * 0.03 * e;
-
-    // Dispersion vers le réseau quand le portrait n'est plus affiché.
     p = mix(p, aStart * 1.25, uScatter);
 
-    // Le pointeur écarte les points, comme une main dans un nuage.
-    vec2 d = p.xy - uPointer.xy;
-    float dist = length(d);
-    float force = uPointerOn * (1.0 - smoothstep(0.0, 0.85, dist)) * 0.4;
-    p.xy += (d / max(dist, 0.0001)) * force;
-    p.z += force * 0.8;
-
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    // Points fins : la densité dessine le visage, pas la taille.
-    gl_PointSize = (0.11 + aIntensity * 0.21) * uPixelRatio * (190.0 / -mv.z);
+    float face = aKind == 1.0 ? 1.0 : 0.0;
+    float mouth = aKind == 2.0 ? 1.0 : 0.0;
+    gl_PointSize = uSize * (0.55 + aIntensity * 0.85) * (1.0 + mouth * 0.8) * uPixelRatio * (190.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
 
     // Ligne de balayage : une bande lumineuse qui descend sur le visage.
-    vScan = (1.0 - smoothstep(0.0, 0.16, abs(position.y - uScanY))) * aFace;
+    float scan = (1.0 - smoothstep(0.0, 0.14, abs(position.y - uScanY))) * (0.35 + face);
 
-    float speaking = 1.0 + uVoice * (0.3 + aJaw * 1.4 + aUpper * 0.8);
-    vIntensity = aIntensity;
-    vAlpha = uOpacity * (0.2 + aIntensity * 0.62) * (0.25 + 0.75 * e) * (1.0 - uScatter) * speaking
-      * (1.0 + vScan * 1.3) + force * 0.5 * uOpacity;
+    // Couleur : teinte de la photo dans la lumière, vert du signal dans l'ombre.
+    vec3 signal = vec3(0.24, 0.86, 0.52);
+    // Teint fidèle : la couleur réelle de la peau, éclaircie (reflets cuivrés).
+    float lum = max(dot(aColor, vec3(0.2126, 0.7152, 0.0722)), 0.03);
+    vec3 photo = min(aColor / lum * 0.62, vec3(1.0));
+    vec3 base = mix(signal * 0.9, photo, smoothstep(0.08, 0.45, aIntensity) * (0.45 + 0.55 * face));
+    base = mix(base, vec3(0.62, 1.0, 0.78), scan * 0.75);
+    vColor = mix(base, signal * 1.15, mouth);
+
+    float speaking = 1.0 + uVoice * 0.35 * face;
+    float visible = (0.25 + 0.75 * e) * (1.0 - uScatter);
+    vAlpha = uOpacity * visible * speaking * (1.0 + scan * 1.2)
+      * mix((0.08 + aIntensity * 1.1) * uDensity, uOpen * 0.6, mouth);
   }
 `;
 
 const FRAGMENT = /* glsl */ `
   varying float vAlpha;
-  varying float vIntensity;
-  varying float vScan;
+  varying vec3 vColor;
   void main() {
     vec2 p = gl_PointCoord - 0.5;
     float d = length(p);
     if (d > 0.5) discard;
     float core = smoothstep(0.5, 0.0, d);
-    // Visage : blanc chaud ; contours et brume : vert du signal ; balayage : vert vif.
-    vec3 signal = vec3(0.24, 0.86, 0.52);
-    vec3 skin = vec3(0.93, 0.96, 0.92);
-    vec3 color = mix(signal, skin, smoothstep(0.45, 0.95, vIntensity));
-    color = mix(color, vec3(0.45, 1.0, 0.7), vScan * 0.7);
-    gl_FragColor = vec4(color * core, core * vAlpha);
+    gl_FragColor = vec4(vColor * core, core * vAlpha);
+  }
+`;
+
+const WIRE_VERTEX = /* glsl */ `
+  ${COMMON}
+  uniform float uScanY;
+  uniform float uWire;
+  varying float vAlpha;
+  void main() {
+    vec3 p = rig(position, 1.0);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    float scan = 1.0 - smoothstep(0.0, 0.35, abs(position.y - uScanY));
+    // Scintillement discret, plus présent quand la voix passe.
+    float flicker = 0.85 + 0.15 * sin(uTime * 23.0 + position.x * 40.0);
+    vAlpha = uWire * (0.05 + 0.1 * uOpen + scan * 0.5) * flicker;
+  }
+`;
+
+const WIRE_FRAGMENT = /* glsl */ `
+  varying float vAlpha;
+  void main() {
+    gl_FragColor = vec4(vec3(0.24, 0.86, 0.52) * vAlpha, vAlpha);
   }
 `;
 
 const damp = (a: number, b: number, lambda: number, dt: number) => a + (b - a) * (1 - Math.exp(-lambda * dt));
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-
-/** Repères du visage dans la photo recadrée (u, v de 0 à 1). */
-const FACE = { u: 0.383, v: 0.36, ru: 0.19, rv: 0.24 };
-const MOUTH = { u: 0.347, v: 0.443 };
 
 export class PortraitCloud {
-  readonly object: Points;
+  readonly object = new Group();
   private material: ShaderMaterial;
+  private wireMaterial: ShaderMaterial;
   private geometry = new BufferGeometry();
+  private wireGeometry = new BufferGeometry();
   private progress = 0;
   private scatter = 1;
-  private pointerOn = 0;
   private started = false;
   private scanClock = 0;
   private readonly top: number;
   private readonly bottom: number;
+  private turn = new Vector2();
+  private open = 0;
+  private openSlow = 0;
+  private shape = 0;
+  private blinkClock = 2.5;
+  private blinkPhase = -1;
+  private readonly reduced: boolean;
   /** Présence du portrait (0 à 1), utilisée pour atténuer le réseau. */
   visibility = 0;
+  /** Tête dans le repère du portrait (placement dans un cadre de la page). */
+  readonly frame: PortraitData["frame"];
 
-  constructor(data: Uint16Array, options: { mobile: boolean; ratio: number }) {
-    const total = data.length / 3;
-    const step = options.mobile ? 2 : 1; // mobile : un point sur deux
-    const count = Math.floor(total / step);
-    const height = 7.4;
-    const width = height * (470 / 580);
-    // Le visage occupe le haut gauche de la photo : on le recentre.
-    const offsetX = (0.5 - FACE.u) * width;
-    const offsetY = -0.1 * height;
-    this.top = (0.5 - (FACE.v - FACE.rv)) * height + offsetY;
-    this.bottom = (0.5 - (FACE.v + FACE.rv)) * height + offsetY;
-
-    const target = new Float32Array(count * 3);
+  constructor(data: PortraitData, options: { ratio: number; size: number; reducedMotion?: boolean }) {
+    this.reduced = options.reducedMotion ?? false;
+    this.frame = data.frame;
+    const { count } = data;
     const start = new Float32Array(count * 3);
     const delay = new Float32Array(count);
-    const intensity = new Float32Array(count);
-    const jaw = new Float32Array(count);
-    const upper = new Float32Array(count);
-    const face = new Float32Array(count);
-
+    let top = -Infinity;
+    let bottom = Infinity;
     for (let i = 0; i < count; i++) {
-      const s = i * step * 3;
-      const u = data[s]! / 65535;
-      const v = data[s + 1]! / 65535;
-      const k = data[s + 2]! / 65535;
-
-      // Relief : le visage est bombé (ellipsoïde), les zones éclairées avancent.
-      const fu = (u - FACE.u) / FACE.ru;
-      const fv = (v - FACE.v) / FACE.rv;
-      const inside = 1 - fu * fu - fv * fv;
-      const bulge = inside > 0 ? Math.sqrt(inside) : 0;
-      face[i] = bulge > 0 ? Math.min(1, bulge * 1.6) : 0;
-
-      target[i * 3] = (u - 0.5) * width + offsetX;
-      target[i * 3 + 1] = (0.5 - v) * height + offsetY;
-      target[i * 3 + 2] = bulge * 0.95 + k * 0.35 + (Math.random() - 0.5) * 0.08;
-
-      // Mâchoire : lèvre inférieure et menton, sous la ligne de la bouche.
-      const across = Math.exp(-(((u - MOUTH.u) / 0.085) ** 2));
-      const below = clamp01((v - MOUTH.v) / 0.012) * (1 - clamp01((v - 0.53) / 0.035));
-      jaw[i] = across * below;
-      // Lèvre supérieure : juste au-dessus de la ligne de la bouche.
-      upper[i] = Math.exp(-(((u - MOUTH.u) / 0.06) ** 2)) * (v < MOUTH.v ? Math.exp(-(((v - (MOUTH.v - 0.012)) / 0.012) ** 2)) : 0);
-
       // Départ : dispersés dans l'espace du réseau.
       const theta = Math.random() * Math.PI * 2;
       const z = Math.random() * 2 - 1;
@@ -167,73 +182,138 @@ export class PortraitCloud {
       start[i * 3] = Math.cos(theta) * ring * r;
       start[i * 3 + 1] = z * r * 0.6;
       start[i * 3 + 2] = Math.sin(theta) * ring * r - 4;
-
       // Assemblage de haut en bas, avec un léger désordre.
-      delay[i] = v * 0.75 + Math.random() * 0.3;
-      intensity[i] = k;
+      const y = data.position[i * 3 + 1]!;
+      delay[i] = (0.5 - y / data.height) * 0.75 + Math.random() * 0.3;
+      if (data.kind[i] === 1) {
+        top = Math.max(top, y);
+        bottom = Math.min(bottom, y);
+      }
     }
+    this.top = top;
+    this.bottom = bottom;
 
-    this.geometry.setAttribute("position", new BufferAttribute(target, 3));
-    this.geometry.setAttribute("aStart", new BufferAttribute(start, 3));
-    this.geometry.setAttribute("aDelay", new BufferAttribute(delay, 1));
-    this.geometry.setAttribute("aIntensity", new BufferAttribute(intensity, 1));
-    this.geometry.setAttribute("aJaw", new BufferAttribute(jaw, 1));
-    this.geometry.setAttribute("aUpper", new BufferAttribute(upper, 1));
-    this.geometry.setAttribute("aFace", new BufferAttribute(face, 1));
+    const g = this.geometry;
+    g.setAttribute("position", new BufferAttribute(data.position, 3));
+    g.setAttribute("aStart", new BufferAttribute(start, 3));
+    g.setAttribute("aDelay", new BufferAttribute(delay, 1));
+    g.setAttribute("aColor", new BufferAttribute(data.color, 3));
+    g.setAttribute("aIntensity", new BufferAttribute(data.intensity, 1));
+    g.setAttribute("aJaw", new BufferAttribute(data.jaw, 3));
+    g.setAttribute("aShape", new BufferAttribute(data.shape, 3));
+    g.setAttribute("aBlink", new BufferAttribute(data.blink, 3));
+    g.setAttribute("aHead", new BufferAttribute(data.head, 1));
+    g.setAttribute("aKind", new BufferAttribute(data.kind, 1));
 
+    const w = this.wireGeometry;
+    w.setAttribute("position", new BufferAttribute(data.wire.position, 3));
+    w.setAttribute("aJaw", new BufferAttribute(data.wire.jaw, 3));
+    w.setAttribute("aShape", new BufferAttribute(data.wire.shape, 3));
+    w.setAttribute("aBlink", new BufferAttribute(data.wire.blink, 3));
+
+    const shared = {
+      uOpen: { value: 0 },
+      uShape: { value: 0 },
+      uBlink: { value: 0 },
+      uHeadRot: { value: new Vector2() },
+      uPivot: { value: new Vector3(...data.pivot) },
+      uTime: { value: 0 },
+      uScanY: { value: 99 },
+    };
     this.material = new ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
       uniforms: {
+        ...shared,
         uProgress: { value: 0 },
         uScatter: { value: 1 },
-        uVoice: { value: 0 },
-        uTime: { value: 0 },
-        uScanY: { value: 99 },
         uPixelRatio: { value: options.ratio },
         uOpacity: { value: 1 },
-        uPointer: { value: new Vector3(99, 99, 0) },
-        uPointerOn: { value: 0 },
+        uSize: { value: options.size },
+        uVoice: { value: 0 },
+        // Plus de particules, chacune plus discrète : même luminosité d'ensemble.
+        uDensity: { value: Math.min(1.2, (16000 / count) ** 0.8) },
       },
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
     });
-    this.object = new Points(this.geometry, this.material);
-    this.object.frustumCulled = false;
+    this.wireMaterial = new ShaderMaterial({
+      vertexShader: WIRE_VERTEX,
+      fragmentShader: WIRE_FRAGMENT,
+      uniforms: { ...shared, uWire: { value: 0 } },
+      transparent: true,
+      depthWrite: false,
+      blending: AdditiveBlending,
+    });
+
+    const points = new Points(this.geometry, this.material);
+    points.frustumCulled = false;
+    const wire = new LineSegments(this.wireGeometry, this.wireMaterial);
+    wire.frustumCulled = false;
+    this.object.add(points, wire);
   }
 
   /**
    * @param visible le portrait doit être affiché (hero, ou transmission en cours)
    * @param opacity intensité du portrait
-   * @param pointer position du pointeur dans le repère du portrait (ou null)
-   * @param voice niveau de la voix (0 à 1)
+   * @param gaze direction du regard (-1 à 1 sur chaque axe) ou null
+   * @param voice ouverture de la bouche (0 à 1)
+   * @param mouthShape forme des lèvres (0 arrondies, 1 étirées)
    */
-  update(dt: number, time: number, visible: boolean, opacity: number, pointer: Vector3 | null, voice = 0) {
+  update(dt: number, time: number, visible: boolean, opacity: number, gaze: Vector2 | null, voice = 0, mouthShape = 0.5) {
     if (visible) this.started = true;
     // Assemblage plus rapide quand une transmission l'appelle.
     if (this.started) this.progress = Math.min(this.progress + dt * (voice > 0 ? 1.1 : 0.55), 1.7);
     this.scatter = damp(this.scatter, visible ? 0 : 1, visible ? 2.8 : 1.6, dt);
-    this.pointerOn = damp(this.pointerOn, pointer ? 1 : 0, 6, dt);
     this.visibility = (1 - this.scatter) * Math.min(this.progress, 1);
+
+    // Bouche : suit la voix (déjà lissée), avec un léger amorti.
+    this.open = damp(this.open, voice, 28, dt);
+    this.openSlow = damp(this.openSlow, voice, 3, dt);
+    this.shape = damp(this.shape, (mouthShape - 0.5) * 2 * Math.min(1, voice * 2.5), 14, dt);
+
+    // Clignements : toutes les 2,5 à 6 s, 0,18 s.
+    if (!this.reduced) {
+      this.blinkClock -= dt;
+      if (this.blinkClock <= 0) {
+        this.blinkPhase = 0;
+        this.blinkClock = 2.5 + Math.random() * 3.5;
+      }
+    }
+    let blink = 0;
+    if (this.blinkPhase >= 0) {
+      this.blinkPhase += dt / 0.18;
+      blink = this.blinkPhase < 0.4 ? this.blinkPhase / 0.4 : Math.max(0, 1 - (this.blinkPhase - 0.4) / 0.6);
+      if (this.blinkPhase >= 1) this.blinkPhase = -1;
+    }
+
+    // Tête : suit le regard ; oscillation lente au repos ; hochement en parlant.
+    const idleYaw = this.reduced ? 0 : Math.sin(time * 0.32) * 0.09;
+    const idlePitch = this.reduced ? 0 : Math.sin(time * 0.21) * 0.025;
+    const nod = (this.open - this.openSlow) * 0.1;
+    const targetYaw = gaze ? gaze.x * 0.3 : idleYaw;
+    const targetPitch = (gaze ? gaze.y * 0.16 : idlePitch) + nod;
+    this.turn.set(damp(this.turn.x, targetYaw, 3.2, dt), damp(this.turn.y, targetPitch, 3.2, dt));
 
     // Balayage toutes les 7 secondes, du haut vers le bas du visage (1,6 s).
     this.scanClock = (this.scanClock + dt) % 7;
     const scan = this.scanClock < 1.6 ? this.top + (this.bottom - this.top) * (this.scanClock / 1.6) : 99;
 
-    // Oscillation lente : la profondeur du visage devient perceptible.
-    this.object.rotation.y = Math.sin(time * 0.32) * 0.11;
-    this.object.rotation.x = Math.sin(time * 0.21) * 0.03;
-
     const u = this.material.uniforms;
     u.uProgress!.value = this.progress;
     u.uScatter!.value = this.scatter;
+    u.uOpen!.value = this.open;
+    u.uShape!.value = this.shape;
+    u.uBlink!.value = blink;
     u.uVoice!.value = voice;
+    (u.uHeadRot!.value as Vector2).copy(this.turn);
     u.uTime!.value = time;
     u.uScanY!.value = scan;
     u.uOpacity!.value = opacity;
-    if (pointer) (u.uPointer!.value as Vector3).copy(pointer);
-    u.uPointerOn!.value = this.pointerOn;
+    // Le filaire apparaît une fois le visage formé.
+    const formed = Math.max(0, Math.min(1, (this.progress - 1) / 0.5)) * (1 - this.scatter);
+    this.wireMaterial.uniforms.uWire!.value = formed * opacity;
     this.object.visible = this.scatter < 0.995;
   }
 
@@ -243,6 +323,8 @@ export class PortraitCloud {
 
   dispose() {
     this.geometry.dispose();
+    this.wireGeometry.dispose();
     this.material.dispose();
+    this.wireMaterial.dispose();
   }
 }

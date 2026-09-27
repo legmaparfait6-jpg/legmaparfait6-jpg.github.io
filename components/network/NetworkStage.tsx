@@ -6,6 +6,7 @@ import type { GraphData, GraphNode } from "@/content/graph";
 import { emit, on, runtime } from "@/lib/bus";
 import { play } from "@/lib/sound";
 import type { Formation, NetworkEngine } from "./engine";
+import type { PortraitData } from "./portrait-build";
 
 /** Formation et intensité de la scène pour chaque section de l'accueil. */
 const SECTION_STATE: Record<string, [Formation, number]> = {
@@ -36,6 +37,42 @@ function canRun3D(): boolean {
 }
 
 /**
+ * Visage en particules. Leur nombre suit la puissance de l'appareil :
+ * téléphone, processeur modeste ou ordinateur récent. Le calcul se fait dans
+ * un Worker ; à défaut, sur le fil principal.
+ */
+async function loadPortrait(mobile: boolean): Promise<PortraitData | null> {
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const modest = (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
+  const count = mobile ? 16000 : modest ? 24000 : 36000;
+  const fromWorker = await new Promise<PortraitData | null | undefined>((resolve) => {
+    if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return resolve(undefined);
+    try {
+      const worker = new Worker(new URL("./portrait-worker.ts", import.meta.url), { type: "module" });
+      worker.onmessage = (e: MessageEvent<PortraitData | null>) => {
+        resolve(e.data ?? undefined);
+        worker.terminate();
+      };
+      worker.onerror = () => {
+        resolve(undefined);
+        worker.terminate();
+      };
+      worker.postMessage({ count });
+    } catch {
+      resolve(undefined);
+    }
+  });
+  if (fromWorker) return fromWorker;
+  try {
+    const { buildPortrait, loadPortraitPixels } = await import("./portrait-build");
+    const rig = await fetch("/profile/portrait-rig.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+    return buildPortrait(rig, await loadPortraitPixels(rig), count);
+  } catch {
+    return null; // sans portrait, la scène reste complète
+  }
+}
+
+/**
  * Scène 3D persistante (montée dans le layout : elle survit aux changements
  * de page). Chargée après l'affichage du contenu, jamais si le mouvement est
  * réduit, en économie de données ou sans WebGL 2.
@@ -51,10 +88,12 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
   // Chargement différé du moteur.
   useEffect(() => {
     if (!canRun3D()) {
+      document.documentElement.dataset.net = "off"; // la photo remplace le visage 3D
       emit("net:ready", { enabled: false });
       return;
     }
     let disposed = false;
+    const mobile = window.innerWidth < 768;
     const load = () => {
       void import("./engine").then(({ NetworkEngine }) => {
         const canvas = canvasRef.current;
@@ -73,22 +112,20 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         setReady(true);
         emit("net:ready", { enabled: true });
 
-        // Portrait en nuage de points (35 Ko), chargé une fois la scène lancée.
-        void fetch("/profile/portrait-points.bin")
-          .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
-          .then((buffer) => {
-            if (!disposed) engine.setPortrait(new Uint16Array(buffer));
-          })
-          .catch(() => {
-            // Sans portrait, la scène reste complète.
-          });
+        // Visage en particules : maillage (≈ 40 Ko compressé) + photo déjà publiée.
+        // Nombre de particules selon l'appareil.
+        void loadPortrait(mobile).then((data) => {
+          if (disposed || !data) return;
+          engine.setPortrait(data);
+          engine.setAnchor(document.querySelector<HTMLElement>("[data-portrait-anchor]"));
+          document.documentElement.dataset.portrait = "";
+        });
       });
     };
     // La scène ne concurrence jamais le premier affichage : elle démarre après
     // le chargement complet de la page, puis quand le navigateur est libre.
     // Sur mobile (processeur plus lent), elle attend davantage.
     // Safari n'a pas requestIdleCallback : repli sur un délai.
-    const mobile = window.innerWidth < 768;
     const idle = typeof window.requestIdleCallback === "function";
     let timer = 0;
     let idleHandle = 0;
@@ -175,6 +212,9 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
       engine.setPointer(e.clientX, e.clientY, fine && !target?.closest(INTERACTIVE));
     };
     const onLeave = () => engine.setPointer(0, 0, false);
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") engine.look(e.clientX, e.clientY);
+    };
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest(".btn, .chip, .finale__cta, .copy-btn, .chain__item")) {
@@ -191,10 +231,13 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         window.setTimeout(() => router.push(`/${lang}/missions/${slug}/`), 520);
       }
     };
+    // Le cadre du visage n'existe que sur l'accueil.
+    engine.setAnchor(document.querySelector<HTMLElement>("[data-portrait-anchor]"));
     const onResize = () => engine.resize();
     const onVisibility = () => (document.hidden ? engine.stop() : engine.start());
 
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown, { passive: true });
     document.addEventListener("pointerleave", onLeave);
     window.addEventListener("click", onClick);
     window.addEventListener("resize", onResize);
@@ -202,6 +245,7 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
     return () => {
       offs.forEach((off) => off());
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onDown);
       document.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);

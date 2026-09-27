@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { emit, on } from "@/lib/bus";
 import type { Lang } from "@/lib/i18n";
-import { hasVoices } from "@/lib/voice";
+import { hasVoices, preloadTransmission } from "@/lib/voice";
 
-/** Vrai une fois monté, si le navigateur dispose d'une voix de synthèse. */
+/** Vrai une fois monté, si le navigateur peut lire l'audio (Web Audio). */
 function useVoiceSupport(lang: Lang) {
   const [supported, setSupported] = useState(false);
   useEffect(() => {
@@ -19,8 +19,8 @@ function useVoiceSupport(lang: Lang) {
 }
 
 /**
- * Bouton « Écouter » d'une transmission. Affiché uniquement si le navigateur
- * dispose de la synthèse vocale (vérifié après le montage).
+ * Bouton « Écouter » d'une transmission. Affiché une fois monté, si le
+ * navigateur dispose de Web Audio ; le survol précharge l'annonce.
  */
 export function RadioTrigger({ id, lang, variant = "icon" }: { id: string; lang: Lang; variant?: "icon" | "button" }) {
   const supported = useVoiceSupport(lang);
@@ -38,6 +38,8 @@ export function RadioTrigger({ id, lang, variant = "icon" }: { id: string; lang:
       className={variant === "button" ? "btn radio-trigger radio-trigger--button" : "radio-trigger"}
       data-playing={playing || undefined}
       onClick={() => emit("voice:play", { id })}
+      onPointerEnter={() => preloadTransmission(id, lang)}
+      onFocus={() => preloadTransmission(id, lang)}
       aria-label={variant === "icon" ? label : undefined}
     >
       <RadioIcon />

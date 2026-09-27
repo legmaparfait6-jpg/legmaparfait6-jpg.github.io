@@ -1,40 +1,52 @@
 /**
- * Voix du système : synthèse vocale du navigateur (aucun fichier audio),
- * timbre robotique assumé (grave, un peu lent), habillée en radio :
- * grésillement d'ouverture et de fermeture, souffle de canal pendant la parole.
+ * Voix du système : annonces pré-enregistrées (scripts/make-voice.mjs),
+ * identiques sur tous les appareils : voix d'homme robotique, volume fort.
  *
- * Chaque phrase est une annonce distincte : le sous-titre change exactement
- * avec la voix. Le niveau publié dans `runtime.voiceLevel` (0 à 1) anime la
- * scène 3D et le portrait au rythme des mots.
+ * Chaque annonce est accompagnée de ses repères : début et fin de chaque
+ * phrase (sous-titres exacts) et deux pistes de la bouche à 50 images/s,
+ * ouverture et forme, lues en phase avec l'horloge audio. Le portrait 3D
+ * articule donc réellement les mots prononcés.
+ *
+ * Habillage radio en direct : grésillement d'ouverture et de fermeture,
+ * souffle de canal très bas pendant la parole.
  */
 import { type Lang } from "./i18n";
 import { emit, runtime } from "./bus";
 
 const VOLUME_KEY = "lp-volume";
 
+type Cue = { duration: number; lines: [number, number][]; fps: number; open: Uint8Array; shape: Uint8Array };
+type Loaded = { cue: Cue; buffer: AudioBuffer };
+
 let ctx: AudioContext | null = null;
+let master: GainNode | null = null;
 let bed: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
+let source: AudioBufferSourceNode | null = null;
+let current: (Loaded & { id: string }) | null = null;
 let session = 0;
-let currentId: string | null = null;
 let raf = 0;
 let volume = 1;
-let speaking = false;
+let startedAt = 0; // horloge audio au moment où la position 0 serait jouée
+let offset = 0; // position au moment de la pause (s)
 let paused = false;
-let pulse = 0;
-let lines: string[] = [];
-let lineIndex = -1;
-let lineStart = 0;
 let lastPublish = 0;
-let lastPublishedLine = -2;
+let lastLine = -2;
+const cache = new Map<string, Promise<Loaded>>();
 
 export function isVoiceSupported(): boolean {
-  return typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  return typeof window !== "undefined" && ("AudioContext" in window || "webkitAudioContext" in window);
+}
+
+/** Les annonces sont des fichiers : disponibles dès que l'audio l'est. */
+export async function hasVoices(_lang: Lang): Promise<boolean> {
+  return isVoiceSupported();
 }
 
 function readVolume(): number {
   try {
-    const v = Number(localStorage.getItem(VOLUME_KEY));
-    return Number.isFinite(v) && v > 0 ? Math.min(1, v) : 1;
+    const stored = localStorage.getItem(VOLUME_KEY);
+    const v = Number(stored);
+    return stored !== null && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
   } catch {
     return 1;
   }
@@ -47,7 +59,8 @@ export function voiceVolume(): number {
 
 export function setVoiceVolume(value: number) {
   volume = Math.max(0, Math.min(1, value));
-  if (bed && ctx) bed.gain.gain.setTargetAtTime(0.01 * volume, ctx.currentTime, 0.05);
+  if (ctx && master) master.gain.setTargetAtTime(volume, ctx.currentTime, 0.04);
+  if (ctx && bed) bed.gain.gain.setTargetAtTime(0.012 * volume, ctx.currentTime, 0.05);
   try {
     localStorage.setItem(VOLUME_KEY, String(volume));
   } catch {
@@ -55,46 +68,66 @@ export function setVoiceVolume(value: number) {
   }
 }
 
-/**
- * Voix d'homme, nette, de la langue demandée. Classement :
- *   voix masculine « naturelle » (Edge) > voix masculine installée
- *   > voix inconnue > voix féminine (jamais choisie s'il existe mieux).
- */
-const MALE = {
-  fr: /henri|paul|thomas|claude|remy|rémy|jerome|jérôme|antoine|nicolas|mathieu|male|homme/i,
-  en: /guy|david|mark|daniel|christopher|eric|ryan|brian|andrew|george|james|roger|steffan|male/i,
-};
-const FEMALE = /hortense|julie|denise|amelie|amélie|audrey|marie|zira|aria|jenny|samantha|susan|hazel|libby|sonia|emma|ava|michelle|female|femme/i;
-
-function score(voice: SpeechSynthesisVoice, lang: Lang): number {
-  let s = 0;
-  if (MALE[lang].test(voice.name)) s += 10;
-  if (FEMALE.test(voice.name)) s -= 20;
-  if (/natural|neural|online/i.test(voice.name)) s += 3; // diction plus nette
-  if (voice.localService) s += 1;
-  return s;
+/** Contexte audio, créé et réveillé pendant le geste de l'utilisateur (exigence iOS). */
+function audio(): AudioContext {
+  if (!ctx) {
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    ctx = new Ctor({ latencyHint: "interactive" });
+    master = ctx.createGain();
+    master.connect(ctx.destination);
+  }
+  if (ctx.state === "suspended") void ctx.resume();
+  return ctx;
 }
 
-function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(lang));
-  if (voices.length === 0) return null;
-  return [...voices].sort((a, b) => score(b, lang) - score(a, lang))[0]!;
+function decode64(text: string): Uint8Array {
+  const bin = atob(text);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
-/** Vrai si le navigateur dispose d'une voix dans la langue (sinon, pas de bouton). */
-export async function hasVoices(lang: Lang): Promise<boolean> {
-  if (!isVoiceSupported()) return false;
-  await voicesReady();
-  return window.speechSynthesis.getVoices().some((v) => v.lang.toLowerCase().startsWith(lang));
+type Meta = { duration: number; lines: [number, number][]; fps: number; open: string; shape: string };
+const files = new Map<string, Promise<[Meta, ArrayBuffer]>>();
+
+/** Téléchargement des fichiers d'une annonce (sans contexte audio). */
+function fetchFiles(key: string): Promise<[Meta, ArrayBuffer]> {
+  let pending = files.get(key);
+  if (!pending) {
+    const get = (url: string) =>
+      fetch(url).then((r) => {
+        if (!r.ok) throw new Error(url);
+        return r;
+      });
+    pending = Promise.all([
+      get(`/voice/${key}.json`).then((r) => r.json() as Promise<Meta>),
+      get(`/voice/${key}.mp3`).then((r) => r.arrayBuffer()),
+    ]);
+    pending.catch(() => files.delete(key));
+    files.set(key, pending);
+  }
+  return pending;
 }
 
-function voicesReady(): Promise<void> {
-  if (window.speechSynthesis.getVoices().length > 0) return Promise.resolve();
-  return new Promise((resolve) => {
-    const done = () => resolve();
-    window.speechSynthesis.addEventListener("voiceschanged", done, { once: true });
-    window.setTimeout(done, 1200);
-  });
+function load(id: string, lang: Lang): Promise<Loaded> {
+  const key = `${id}.${lang}`;
+  let pending = cache.get(key);
+  if (!pending) {
+    const context = audio();
+    pending = fetchFiles(key).then(async ([meta, data]) => ({
+      cue: { duration: meta.duration, lines: meta.lines, fps: meta.fps, open: decode64(meta.open), shape: decode64(meta.shape) },
+      // Copie : decodeAudioData détache le tampon, qui peut resservir.
+      buffer: await context.decodeAudioData(data.slice(0)),
+    }));
+    pending.catch(() => cache.delete(key));
+    cache.set(key, pending);
+  }
+  return pending;
+}
+
+/** Précharge une annonce (survol ou focus d'un bouton « Écouter »). */
+export function preloadTransmission(id: string, lang: Lang) {
+  void fetchFiles(`${id}.${lang}`).catch(() => undefined);
 }
 
 function noiseBuffer(context: AudioContext, seconds: number): AudioBuffer {
@@ -106,45 +139,35 @@ function noiseBuffer(context: AudioContext, seconds: number): AudioBuffer {
 
 /** Grésillement d'ouverture ou de fermeture de canal. */
 function squelch(duration = 0.18) {
-  try {
-    ctx ??= new AudioContext();
-    if (ctx.state === "suspended") void ctx.resume();
-    const source = ctx.createBufferSource();
-    source.buffer = noiseBuffer(ctx, duration);
-    const band = ctx.createBiquadFilter();
-    band.type = "bandpass";
-    band.frequency.value = 2300;
-    band.Q.value = 0.8;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.16 * volume, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    source.connect(band).connect(gain).connect(ctx.destination);
-    source.start();
-  } catch {
-    // Web Audio indisponible : la voix reste audible
-  }
+  if (!ctx || !master) return;
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer(ctx, duration);
+  const band = ctx.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 2300;
+  band.Q.value = 0.8;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.2, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  noise.connect(band).connect(gain).connect(master);
+  noise.start();
 }
 
 /** Souffle de canal radio, très bas, pendant l'annonce. */
 function startBed() {
-  try {
-    ctx ??= new AudioContext();
-    const source = ctx.createBufferSource();
-    source.buffer = noiseBuffer(ctx, 2);
-    source.loop = true;
-    const band = ctx.createBiquadFilter();
-    band.type = "bandpass";
-    band.frequency.value = 1800;
-    band.Q.value = 0.6;
-    const gain = ctx.createGain();
-    // Souffle très bas : il habille la voix sans jamais la couvrir.
-    gain.gain.value = 0.01 * volume;
-    source.connect(band).connect(gain).connect(ctx.destination);
-    source.start();
-    bed = { source, gain };
-  } catch {
-    bed = null;
-  }
+  if (!ctx || bed) return;
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer(ctx, 2);
+  noise.loop = true;
+  const band = ctx.createBiquadFilter();
+  band.type = "bandpass";
+  band.frequency.value = 1800;
+  band.Q.value = 0.6;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.012 * volume;
+  noise.connect(band).connect(gain).connect(ctx.destination);
+  noise.start();
+  bed = { source: noise, gain };
 }
 
 function stopBed() {
@@ -156,103 +179,127 @@ function stopBed() {
   bed = null;
 }
 
-function publish() {
-  const progress = lines.length === 0 ? 1 : Math.min(1, (Math.max(lineIndex, 0) + Math.min(1, (performance.now() - lineStart) / 4000)) / lines.length);
-  emit("voice:state", { id: currentId, playing: speaking && !paused, line: lineIndex, progress });
+function position(): number {
+  if (!ctx || !current) return 0;
+  return paused ? offset : Math.max(0, ctx.currentTime - startedAt);
 }
 
-/** Niveau de la voix : syllabes simulées, renforcées à chaque mot prononcé. */
+function lineAt(t: number, lines: [number, number][]): number {
+  let index = -1;
+  for (let i = 0; i < lines.length; i++) if (t >= lines[i]![0] - 0.05) index = i;
+  return index;
+}
+
+/** Valeur d'une piste à l'instant t, interpolée entre deux images. */
+function sample(track: Uint8Array, fps: number, t: number): number {
+  const f = t * fps;
+  const i = Math.floor(f);
+  if (i < 0 || i >= track.length) return 0;
+  const a = track[i]!;
+  const b = track[Math.min(track.length - 1, i + 1)]!;
+  return (a + (b - a) * (f - i)) / 255;
+}
+
 function loop(time: number) {
-  const talking = speaking && !paused;
-  const syllables = talking ? 0.35 + 0.35 * Math.abs(Math.sin(time / 85)) * Math.abs(Math.sin(time / 37)) : 0;
-  pulse *= 0.86;
-  runtime.voiceLevel = Math.min(1, syllables + pulse);
-  // Interface : à chaque nouvelle phrase, sinon quatre fois par seconde.
-  if (lineIndex !== lastPublishedLine || time - lastPublish > 250) {
-    lastPublishedLine = lineIndex;
+  if (!current) return;
+  const t = position();
+  const { cue } = current;
+  // Légère avance (40 ms) : la bouche précède le son, comme à l'écran.
+  runtime.voiceLevel = paused ? 0 : sample(cue.open, cue.fps, t + 0.04);
+  runtime.mouthShape = paused ? 0.5 : sample(cue.shape, cue.fps, t + 0.04) || 0.5;
+  const line = lineAt(t, cue.lines);
+  if (line !== lastLine || time - lastPublish > 250) {
+    lastLine = line;
     lastPublish = time;
-    publish();
+    emit("voice:state", { id: current.id, playing: !paused, line, progress: Math.min(1, t / cue.duration) });
   }
   raf = requestAnimationFrame(loop);
 }
 
-export async function playTransmission(id: string, lang: Lang, script: string[]) {
+function startSource(from: number) {
+  if (!ctx || !master || !current) return;
+  const node = ctx.createBufferSource();
+  node.buffer = current.buffer;
+  node.connect(master);
+  const mySession = session;
+  node.onended = () => {
+    if (mySession !== session || paused || source !== node) return;
+    squelch(0.24);
+    stopTransmission(true);
+  };
+  const when = ctx.currentTime + 0.02;
+  node.start(when, from);
+  startedAt = when - from;
+  source = node;
+}
+
+export async function playTransmission(id: string, lang: Lang) {
   if (!isVoiceSupported()) return;
+  const context = audio(); // pendant le geste de l'utilisateur
   stopTransmission(false);
   const mySession = ++session;
   volume = readVolume();
-  await voicesReady();
-  if (mySession !== session) return;
-
-  const voice = pickVoice(lang);
-  currentId = id;
-  lines = script;
-  lineIndex = -1;
-  speaking = true;
-  paused = false;
-  runtime.voiceActive = true;
+  master!.gain.value = volume;
+  runtime.voiceActive = true; // le visage se forme pendant le chargement
+  emit("voice:state", { id, playing: false, line: -1, progress: 0 });
   squelch();
+
+  let loaded: Loaded;
+  try {
+    loaded = await load(id, lang);
+  } catch {
+    if (mySession === session) stopTransmission(true);
+    return;
+  }
+  if (mySession !== session) return;
+  if (context.state === "suspended") await context.resume().catch(() => undefined);
+
+  current = { ...loaded, id };
+  paused = false;
+  offset = 0;
+  lastLine = -2;
   startBed();
+  startSource(0);
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(loop);
-
-  script.forEach((text, i) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === "fr" ? "fr-FR" : "en-US";
-    if (voice) utterance.voice = voice;
-    // Timbre robotique mais diction nette : grave sans excès, débit posé, volume maximal.
-    utterance.pitch = 0.72;
-    utterance.rate = lang === "fr" ? 0.94 : 0.92;
-    // Volume de la synthèse au maximum (1) : le curseur ne sert qu'à baisser.
-    utterance.volume = Math.max(0.05, volume);
-    utterance.onstart = () => {
-      if (mySession !== session) return;
-      lineIndex = i;
-      lineStart = performance.now();
-      pulse = 0.5;
-    };
-    utterance.onboundary = () => {
-      if (mySession === session) pulse = Math.min(1, pulse + 0.45);
-    };
-    utterance.onend = () => {
-      if (mySession !== session || i !== script.length - 1) return;
-      squelch(0.24);
-      stopTransmission(true);
-    };
-    utterance.onerror = () => {
-      if (mySession === session && i === script.length - 1) stopTransmission(true);
-    };
-    window.speechSynthesis.speak(utterance);
-  });
-
-  // Filet de sécurité : si la voix ne démarre pas, le lecteur ne reste pas bloqué.
-  window.setTimeout(() => {
-    if (mySession === session && lineIndex === -1) stopTransmission(true);
-  }, 4000);
 }
 
 export function toggleTransmission() {
-  if (!speaking) return;
+  if (!current || !ctx) return;
   if (paused) {
-    window.speechSynthesis.resume();
     paused = false;
+    startSource(offset);
+    startBed();
   } else {
-    window.speechSynthesis.pause();
+    offset = position();
     paused = true;
+    const node = source;
+    source = null;
+    try {
+      node?.stop();
+    } catch {
+      // déjà arrêté
+    }
+    stopBed();
   }
 }
 
 export function stopTransmission(notify = true) {
   session++;
-  if (isVoiceSupported()) window.speechSynthesis.cancel();
+  const node = source;
+  source = null;
+  try {
+    node?.stop();
+  } catch {
+    // déjà arrêté
+  }
   cancelAnimationFrame(raf);
   stopBed();
-  speaking = false;
   paused = false;
   runtime.voiceLevel = 0;
+  runtime.mouthShape = 0.5;
   runtime.voiceActive = false;
-  const id = currentId;
-  currentId = null;
-  lineIndex = -1;
+  const id = current?.id ?? null;
+  current = null;
   if (notify) emit("voice:state", { id, playing: false, line: -1, progress: 1 });
 }

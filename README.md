@@ -11,6 +11,8 @@ Portfolio et CV de **Legma Parfait**, développeur Full-Stack & IA basé à Ouag
 Le site est pensé comme un système réseau vivant :
 
 - **Réseau 3D** (three.js) dont chaque nœud est une vraie technologie ou une vraie mission ; il se réorganise selon la section lue (couches, grappes par mission, vue d'ensemble).
+- **Visage 3D qui parle** : un maillage de 478 points extrait de la photo (MediaPipe) porte des dizaines de milliers de particules ; la mâchoire, les lèvres et les paupières bougent, la tête suit le pointeur.
+- **Voix du système** : sept annonces en français et en anglais, voix d'homme robotique fabriquée par un vocodeur ; la bouche suit l'audio image par image, sous-titres synchronisés.
 - **Incident simulé** : une panne rejouée selon les règles réelles de l'application de supervision développée en stage (3 échecs consécutifs, SLA critique de 180 minutes, escalade jusqu'au niveau 3).
 - **Carte des compétences** reliée aux missions qui les utilisent.
 - **Palette de commandes** (`Ctrl` + `K`) : `ping legma`, `open fasocommerce`, `get cv`…
@@ -49,6 +51,10 @@ Autres scripts :
 | `npm run typecheck` | Vérification TypeScript |
 | `python scripts/prepare-images.py` | Prépare les captures des projets (WebP) |
 | `python scripts/make-og.py` | Génère l'image de partage `public/og.png` |
+| `npm run voice` | Fabrique les annonces audio (`public/voice/`), Windows uniquement |
+| `.venv/Scripts/python scripts/make-portrait-rig.py` | Maillage 3D du portrait (`public/profile/portrait-rig.json`) |
+
+Les deux derniers scripts servent uniquement au développement ; leurs résultats sont versionnés. Prérequis détaillés en tête de chaque script.
 
 ## Structure
 
@@ -56,8 +62,8 @@ Autres scripts :
 app/            pages (routes /fr et /en), styles
 components/     sections, en-tête, palette, scène 3D
 content/        toutes les données : profil, missions, compétences, textes, CV
-lib/            langues et typographie, bus d'événements, sons
-scripts/        préparation des images, CV PDF, serveur de prévisualisation
+lib/            langues et typographie, bus d'événements, sons, voix
+scripts/        images, maillage du portrait, voix, CV PDF, serveur de prévisualisation
 docs/           conventions du projet
 ```
 

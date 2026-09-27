@@ -5,11 +5,12 @@
   "description": "Portfolio et CV de Legma Parfait — Développeur Full-Stack & IA",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/postbuild.mjs",
+    "build": "next build && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/postbuild.mjs",
     "typecheck": "tsc --noEmit",
     "cv:pdf": "node scripts/generate-cv-pdf.mjs",
     "images": "python scripts/prepare-images.py",
-    "preview": "node scripts/serve.mjs"
+    "preview": "node scripts/serve.mjs",
+    "voice": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/make-voice.mjs"
   },
   "dependencies": {
     "next": "16.3.6",
@@ -24,6 +25,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/three": "0.186.0",
+    "ffmpeg-static": "5.3.0",
     "playwright-core": "1.63.0",
     "typescript": "5.9.3"
   },

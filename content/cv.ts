@@ -24,6 +24,7 @@ export const cv = {
     certifications: { fr: "Certification", en: "Certification" },
     languages: { fr: "Langues", en: "Languages" },
     portfolio: { fr: "Portfolio", en: "Portfolio" },
+    ats: { fr: "Version ATS (PDF)", en: "ATS version (PDF)" },
   } satisfies Record<string, L>,
 
   tagline: {
@@ -32,8 +33,8 @@ export const cv = {
   } satisfies L,
 
   profile: {
-    fr: "Étudiant en Licence 3 d'Informatique de Gestion, orienté développement Full-Stack et intégration de solutions IA. Expérience pratique dans la conception de solutions web et de supervision réseau, avec un intérêt particulier pour les applications SaaS, l'automatisation et la transformation de problématiques métier en solutions numériques.",
-    en: "Final-year Business Computing student focused on full-stack development and AI integration. Hands-on experience designing web and network monitoring solutions, with a strong interest in SaaS applications, automation and turning business problems into digital solutions.",
+    fr: "Développeur Full-Stack en dernière année de Licence d'Informatique de Gestion. En stage chez Moov Africa, conception d'une application de supervision réseau complète : découverte des équipements, collecte SNMP, tickets avec SLA et escalade automatique. Créateur de FasoCommerce, plateforme SaaS modulaire en pré-lancement (15 modules, 207 tests backend). Intègre l'IA et l'automatisation là où elles apportent une vraie valeur.",
+    en: "Full-stack developer in the final year of a Business Computing degree. During an internship at Moov Africa, designed a complete network monitoring application: device discovery, SNMP collection, SLA-driven tickets and automatic escalation. Creator of FasoCommerce, a modular SaaS platform in pre-launch (15 modules, 207 backend tests). Brings in AI and automation where they add real value.",
   } satisfies L,
 
   experience: [

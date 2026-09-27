@@ -44,6 +44,7 @@ const ICONS = {
   phone: "M5 2.5 3 3c-.5 3.8 4.7 9 8.5 8.5l.5-2-2.5-1.3-1.2 1.2c-1.4-.6-2.7-1.9-3.3-3.3l1.2-1.2z",
   pin: "M8 14s4.5-4.2 4.5-7.3a4.5 4.5 0 0 0-9 0C3.5 9.8 8 14 8 14zM8 8.3a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2z",
   code: "M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5",
+  chat: "M3 12.5 3.8 10A5 5 0 1 1 6 12.2zM6 7.5h4M6 9.2h2.5",
   globe: "M8 14A6 6 0 1 0 8 2a6 6 0 0 0 0 12zM2 8h12M8 2c1.8 1.7 2.6 3.7 2.6 6S9.8 12.3 8 14C6.2 12.3 5.4 10.3 5.4 8S6.2 3.7 8 2z",
 };
 
@@ -70,6 +71,10 @@ export default async function CvPage({ params }: Params) {
             <DownloadIcon />
             {t(ui.downloadCv, lang)} (PDF)
           </a>
+          <a className="btn" href={profile.cvAts[lang]} download>
+            <DownloadIcon />
+            {t(h.ats, lang)}
+          </a>
           <PrintButton label={lang === "fr" ? "Imprimer" : "Print"} />
         </div>
       </div>
@@ -80,6 +85,27 @@ export default async function CvPage({ params }: Params) {
             <h1 className="cv__name">{profile.name}</h1>
             <p className="cv__title">{t(profile.title, lang)}</p>
             <p className="cv__tagline">{t(cv.tagline, lang)}</p>
+            {/* Téléphone : contact en un geste (masqué à l'impression). */}
+            <ul className="cv__quick">
+              <li>
+                <a href={`tel:${profile.phone.href}`}>
+                  <Icon d={ICONS.phone} />
+                  {lang === "fr" ? "Appeler" : "Call"}
+                </a>
+              </li>
+              <li>
+                <a href={`mailto:${profile.email}`}>
+                  <Icon d={ICONS.mail} />
+                  E-mail
+                </a>
+              </li>
+              <li>
+                <a href={`https://wa.me/${profile.whatsapp}`}>
+                  <Icon d={ICONS.chat} />
+                  WhatsApp
+                </a>
+              </li>
+            </ul>
           </div>
           <a className="cv__qr" href={portfolioUrl} aria-label={`${t(h.portfolio, lang)} : ${siteHost}`}>
             <span className="cv__qr-code" dangerouslySetInnerHTML={{ __html: qr }} />

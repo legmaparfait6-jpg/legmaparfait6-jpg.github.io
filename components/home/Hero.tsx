@@ -12,6 +12,19 @@ export function Hero({ lang }: { lang: Lang }) {
   return (
     <section id="home" className="hero" aria-labelledby="home-title" data-transmission="01-hero">
       <div className="container hero__grid">
+        {/* Mobile et tablette : cadre où le visage 3D se forme. Sans 3D
+            (mouvement réduit, économie de données), la photo s'y affiche. */}
+        <div className="hero__face" data-portrait-anchor aria-hidden="true">
+          <img src={profile.photo.src} alt="" width={profile.photo.width} height={profile.photo.height} loading="lazy" decoding="async" />
+          <span className="hero__face-corner" />
+          <span className="hero__face-corner" />
+          <span className="hero__face-corner" />
+          <span className="hero__face-corner" />
+          <span className="hero__face-label meta">
+            <span className="hero__face-wait">{lang === "fr" ? "Acquisition du signal…" : "Acquiring signal…"}</span>
+            <span className="hero__face-ready">{lang === "fr" ? "Signal · portrait 3D" : "Signal · 3D portrait"}</span>
+          </span>
+        </div>
         <div className="hero__intro">
           {/* Séquence d'activation : CSS pur, 1 s, remplacée par l'état final si le mouvement est réduit. */}
           <p className="hero__boot meta" aria-hidden="true">

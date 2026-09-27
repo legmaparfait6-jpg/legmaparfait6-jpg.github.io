@@ -1,4 +1,4 @@
-// Génère les CV PDF (FR et EN) à partir des pages /fr/cv/ et /en/cv/ de l'export.
+// Génère les CV PDF (FR et EN, versions complète et ATS) à partir de l'export.
 //
 // Pilote le navigateur déjà installé (Edge, sinon Chrome) via playwright-core :
 // on attend que les polices soient chargées et on imprime les fonds (bandeau
@@ -14,8 +14,11 @@ import { startServer } from "./serve.mjs";
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const PORT = 4174;
 const TARGETS = [
-  { lang: "fr", file: "Legma-Parfait-CV-FR.pdf" },
-  { lang: "en", file: "Legma-Parfait-CV-EN.pdf" },
+  { path: "/fr/cv/", file: "Legma-Parfait-CV-FR.pdf" },
+  { path: "/en/cv/", file: "Legma-Parfait-CV-EN.pdf" },
+  // Version une colonne, texte simple, pour les portails de recrutement (ATS).
+  { path: "/fr/cv/ats/", file: "Legma-Parfait-CV-ATS-FR.pdf", plain: true },
+  { path: "/en/cv/ats/", file: "Legma-Parfait-CV-ATS-EN.pdf", plain: true },
 ];
 
 if (!existsSync(join(ROOT, "out"))) {
@@ -45,11 +48,12 @@ try {
   const page = await browser.newPage();
   // Pas d'écran d'amorçage ni de scène 3D pendant l'impression.
   await page.emulateMedia({ reducedMotion: "reduce", media: "print" });
-  for (const { lang, file } of TARGETS) {
-    await page.goto(`http://localhost:${PORT}/${lang}/cv/`, { waitUntil: "networkidle" });
+  for (const { path, file, plain } of TARGETS) {
+    await page.goto(`http://localhost:${PORT}${path}`, { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
     const target = join(publicDir, file);
-    await page.pdf({ path: target, printBackground: true, preferCSSPageSize: true });
+    // Version ATS : aucun fond, texte noir sur papier blanc.
+    await page.pdf({ path: target, printBackground: !plain, preferCSSPageSize: true });
     copyFileSync(target, join(outDir, file));
     console.log(`${file}  ${Math.round(statSync(target).size / 1024)} Ko`);
   }

@@ -37,6 +37,11 @@ export const profile = {
     fr: "/cv/Legma-Parfait-CV-FR.pdf",
     en: "/cv/Legma-Parfait-CV-EN.pdf",
   } satisfies L,
+  /** Version une colonne, texte simple, pour les portails de recrutement (ATS). */
+  cvAts: {
+    fr: "/cv/Legma-Parfait-CV-ATS-FR.pdf",
+    en: "/cv/Legma-Parfait-CV-ATS-EN.pdf",
+  } satisfies L,
   education: {
     degree: { fr: "Licence 3 — Informatique de Gestion", en: "Bachelor's degree (3rd year) — Business Computing" } satisfies L,
     school: { fr: "Université de l'Unité Africaine (UA), ex‑IAM", en: "Université de l'Unité Africaine (UA), formerly IAM" } satisfies L,

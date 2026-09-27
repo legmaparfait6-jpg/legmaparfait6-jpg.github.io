@@ -19,12 +19,14 @@ import {
   Points,
   Scene,
   ShaderMaterial,
+  Vector2,
   Vector3,
   WebGLRenderer,
 } from "three";
 import type { GraphData, GraphNode } from "@/content/graph";
 import { type IncidentPhase, runtime } from "@/lib/bus";
 import { PortraitCloud } from "./portrait";
+import type { PortraitData } from "./portrait-build";
 
 export type Formation = "galaxy" | "layers" | "clusters" | "live" | "finale" | "mission";
 
@@ -135,7 +137,12 @@ export class NetworkEngine {
   private diveBoost = 0;
   private rotation = 0;
   private portrait: PortraitCloud | null = null;
-  private pointerPlane = new Vector3();
+  private gaze = new Vector2();
+  private touchLook = { x: 0, y: 0, until: 0 };
+  private anchor: HTMLElement | null = null;
+  /** Position du cadre dans le document (mesurée hors de la boucle d'animation). */
+  private anchorBox = { top: 0, left: 0, width: 0, height: 0 };
+  private anchorObserver: ResizeObserver | null = null;
 
   private width = 1;
   private height = 1;
@@ -381,14 +388,21 @@ export class NetworkEngine {
     cancelAnimationFrame(this.raf);
   }
 
-  /** Nuage de points du portrait (données préparées par scripts/make-portrait-points.py). */
-  setPortrait(data: Uint16Array) {
+  /** Visage en particules (construit par portrait-build.ts). */
+  setPortrait(data: PortraitData) {
     this.portrait?.dispose();
-    this.portrait = new PortraitCloud(data, { mobile: this.options.mobile, ratio: this.renderer.getPixelRatio() });
+    const portrait = new PortraitCloud(data, { ratio: this.renderer.getPixelRatio(), size: this.options.mobile ? 0.2 : 0.16 });
     // Attaché à la caméra : toujours de face, en arrière-plan, quelle que soit
     // la formation du réseau.
-    this.camera.add(this.portrait.object);
     if (!this.camera.parent) this.scene.add(this.camera);
+    // Shaders compilés en parallèle par le GPU quand c'est possible : aucune
+    // image bloquée à l'apparition du visage.
+    const attach = () => {
+      if (this.portrait !== portrait) return;
+      this.camera.add(portrait.object);
+    };
+    this.portrait = portrait;
+    this.renderer.compileAsync(portrait.object, this.camera, this.scene).then(attach, attach);
   }
 
   setState(state: StageState) {
@@ -437,6 +451,30 @@ export class NetworkEngine {
     this.pointer.active = active;
   }
 
+  /** Cadre de la page où placer le visage (hero mobile), ou null. */
+  setAnchor(element: HTMLElement | null) {
+    this.anchorObserver?.disconnect();
+    this.anchor = element;
+    this.measureAnchor();
+    if (element && typeof ResizeObserver !== "undefined") {
+      this.anchorObserver = new ResizeObserver(() => this.measureAnchor());
+      this.anchorObserver.observe(element);
+    }
+  }
+
+  /** Mesure unique (au changement de taille) : la boucle ne lit que scrollY, sans forcer de mise en page. */
+  private measureAnchor() {
+    const rect = this.anchor?.getBoundingClientRect();
+    this.anchorBox = rect
+      ? { top: rect.top + window.scrollY, left: rect.left, width: rect.width, height: rect.height }
+      : { top: 0, left: 0, width: 0, height: 0 };
+  }
+
+  /** Écran tactile : le visage regarde brièvement l'endroit touché. */
+  look(x: number, y: number) {
+    this.touchLook = { x: (x / this.width) * 2 - 1, y: (y / this.height) * 2 - 1, until: this.elapsed + 2.5 };
+  }
+
   hoveredNode(): GraphNode | null {
     return this.hovered >= 0 && this.hovered < this.realCount ? this.graph.nodes[this.hovered]! : null;
   }
@@ -451,10 +489,12 @@ export class NetworkEngine {
     this.portrait?.setPixelRatio(ratio);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
+    this.measureAnchor();
   }
 
   dispose() {
     this.stop();
+    this.anchorObserver?.disconnect();
     this.portrait?.dispose();
     this.nodeGeometry.dispose();
     this.lineGeometry.dispose();
@@ -527,24 +567,43 @@ export class NetworkEngine {
     // Hors du hero, pendant une transmission : plus à droite et plus loin,
     // pour qu'on le sente parler sans gêner la lecture.
     const hero = this.state.portrait === true && this.state.formation === "galaxy";
-    const depth = desktop ? (hero ? 11.5 : 13) : 17;
-    object.position.set(desktop ? (hero ? 2.8 : 4.1) : 0, desktop ? (hero ? 0.45 : 0.1) : -2.3, -depth);
+    let depth = desktop ? (hero ? 10.4 : 12.5) : 17;
+    object.position.set(desktop ? (hero ? 2.55 : 3.9) : 0, desktop ? (hero ? 0.5 : 0.1) : -2.3, -depth);
+    const tan = Math.tan(((this.camera.fov / 2) * Math.PI) / 180);
+    // Cadre dans la page (hero mobile) : la tête y est cadrée exactement et
+    // défile avec lui.
+    const speaking = runtime.voiceActive;
+    const box = this.anchorBox;
+    const rect = !desktop && box.height > 0 ? { left: box.left, top: box.top - window.scrollY, width: box.width, height: box.height } : undefined;
+    const framed = hero && !!rect && rect.top + rect.height > this.height * 0.2;
+    // Place la tête (cheveux compris) dans un rectangle de l'écran.
+    const fit = (cx: number, cy: number, h: number) => {
+      const head = this.portrait!.frame;
+      depth = (head.height * this.height) / (2 * tan * h);
+      const half = tan * depth;
+      const nx = (cx / this.width) * 2 - 1;
+      const ny = 1 - (cy / this.height) * 2;
+      object.position.set(nx * half * this.camera.aspect - head.x, ny * half - head.y, -depth);
+    };
+    if (framed) fit(rect.left + rect.width / 2, rect.top + rect.height / 2, rect.height * 0.9);
+    // Téléphone, annonce lancée plus bas dans la page : la tête parle
+    // au-dessus du lecteur, en arrière-plan du texte.
+    else if (!desktop && speaking) fit(this.width / 2, this.height * 0.5, this.height * 0.34);
 
-    let pointer: Vector3 | null = null;
-    if (this.pointer.active && desktop) {
-      // Pointeur ramené dans le plan du portrait (repère de la caméra).
-      const halfH = Math.tan(((this.camera.fov / 2) * Math.PI) / 180) * depth;
-      pointer = this.pointerPlane.set(
-        this.pointer.nx * halfH * this.camera.aspect - object.position.x,
-        -this.pointer.ny * halfH - object.position.y,
-        0,
-      );
-    }
+    // Regard : la tête se tourne vers le pointeur (ou le doigt, brièvement).
+    // Position du portrait à l'écran, en coordonnées normalisées.
+    const halfH = tan * depth;
+    const sx = object.position.x / (halfH * this.camera.aspect);
+    const sy = -object.position.y / halfH;
+    let gaze: Vector2 | null = null;
+    if (this.pointer.active && desktop) gaze = this.gaze.set(this.pointer.nx - sx, this.pointer.ny - sy);
+    else if (this.elapsed < this.touchLook.until) gaze = this.gaze.set(this.touchLook.x - sx, this.touchLook.y - sy);
+    if (gaze) gaze.set(Math.max(-1, Math.min(1, gaze.x)), Math.max(-1, Math.min(1, gaze.y)));
 
     // Visible dans le hero, et partout pendant une transmission : c'est lui qui parle.
-    const speaking = runtime.voiceActive;
-    const opacity = hero ? this.opacity : speaking ? (desktop ? 0.62 : 0.45) : this.opacity;
-    this.portrait.update(dt, this.elapsed, hero || speaking, opacity, pointer, runtime.voiceLevel);
+    const inHero = desktop ? hero : framed;
+    const opacity = inHero ? this.opacity : speaking ? (desktop ? 0.62 : 0.45) : this.opacity;
+    this.portrait.update(dt, this.elapsed, inHero || speaking, opacity, gaze, runtime.voiceLevel, runtime.mouthShape);
     return this.portrait.visibility;
   }
 

@@ -425,6 +425,17 @@
   font-size: 8.2pt;
 }
 
+/* Contact en un geste : téléphone uniquement (voir plus bas). */
+.cv__quick {
+  display: none;
+  list-style: none;
+}
+
+.cv__quick .cv__icon {
+  width: 14px;
+  height: 14px;
+}
+
 /* ----- écran étroit : une colonne ----- */
 
 @media (max-width: 760px) {
@@ -449,6 +460,42 @@
   .cv__main,
   .cv__aside {
     padding: 22px 20px;
+  }
+
+  /* Imprimer depuis un téléphone : rarement utile, le PDF suffit. */
+  .cv-print {
+    display: none;
+  }
+
+  /* Le QR code renvoie au site où l'on se trouve déjà : place au contact direct. */
+  .cv__qr {
+    display: none;
+  }
+
+  .cv__quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .cv__quick a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgb(255 255 255 / 0.18);
+    border-radius: 999px;
+    color: #fff;
+    font-size: 10pt;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .cv__quick a:active {
+    border-color: #3ddc84;
+    color: #3ddc84;
   }
 }
 

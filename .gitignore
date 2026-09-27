@@ -5,3 +5,6 @@ out/
 next-env.d.ts
 .env*.local
 .vercel
+.cache/
+.venv/
+scripts/.portrait-*.png

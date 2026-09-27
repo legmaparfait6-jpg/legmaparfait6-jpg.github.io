@@ -13,6 +13,8 @@ Règles de développement du portfolio de Legma Parfait.
 - Next.js 16 (App Router) en **export statique**, TypeScript strict, React 19.
 - CSS natif avec variables (`app/globals.css`, `app/network.css`, `app/experience.css`), sans framework.
 - three.js pour la scène 3D, chargée à la demande (`components/network/engine.ts`).
+- Visage 3D : maillage préparé hors ligne (`scripts/make-portrait-rig.py`, MediaPipe dans `.venv`), particules tirées dans le navigateur sur la photo (`portrait-build.ts`).
+- Voix : fichiers audio pré-enregistrés (`npm run voice`), jamais la synthèse vocale du navigateur. Après toute modification de `content/transmissions.ts`, relancer `npm run voice` et versionner `public/voice/`.
 - Aucune bibliothèque d'animation : transitions et animations en CSS.
 
 ## Performance

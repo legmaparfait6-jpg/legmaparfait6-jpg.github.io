@@ -7,7 +7,8 @@
 // préchargement produit une 404 dans la console.
 // Ce script crée une copie de chaque fichier sous le nom attendu, ce qui
 // fonctionne sur n'importe quel hébergeur statique.
-import { copyFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { copyFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,3 +50,19 @@ walk(OUT, (dir, name) => {
 });
 
 console.log(`postbuild : ${created} fichier(s) de préchargement aplati(s).`);
+
+// Voix : chaque annonce audio doit correspondre au texte actuel (sous-titres).
+const { transmissions } = await import("../content/transmissions.ts");
+const stale = [];
+for (const tr of transmissions) {
+  for (const lang of ["fr", "en"]) {
+    const file = join(OUT, "voice", `${tr.id}.${lang}.json`);
+    const expected = createHash("sha1").update(tr.lines[lang].join("|")).digest("hex").slice(0, 12);
+    if (!existsSync(file) || JSON.parse(readFileSync(file, "utf8")).text !== expected) stale.push(`${tr.id}.${lang}`);
+  }
+}
+if (stale.length > 0) {
+  console.error(`postbuild : annonces audio à régénérer (npm run voice) : ${stale.join(", ")}`);
+  process.exit(1);
+}
+console.log("postbuild : voix conformes aux textes.");

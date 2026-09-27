@@ -1,10 +1,11 @@
 import type { Lang } from "@/lib/i18n";
 
 /**
- * « Transmissions » : annonces de la voix du système (synthèse vocale du
- * navigateur, timbre robotique assumé). La voix présente Legma Parfait à la
- * troisième personne : c'est le système qui parle, pas une imitation.
- * Chaque phrase est prononcée séparément et sert de sous-titre.
+ * « Transmissions » : annonces de la voix du système (voix d'homme robotique,
+ * fichiers fabriqués par `npm run voice`). La voix présente Legma Parfait à
+ * la troisième personne : c'est le système qui parle, pas une imitation.
+ * Chaque phrase sert de sous-titre ; ses horaires sont dans public/voice/.
+ * Après toute modification ici : relancer `npm run voice`.
  */
 
 export type Transmission = {
