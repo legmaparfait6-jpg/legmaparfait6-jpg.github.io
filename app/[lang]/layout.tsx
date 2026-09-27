@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import "../network.css";
+import "../experience.css";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -20,6 +21,8 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "sw
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const dynamicParams = false;
+
+const HEAD_SCRIPT = `(function(){var d=document.documentElement;d.classList.replace('no-js','js');try{if(sessionStorage.getItem('lp-intro')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;sessionStorage.setItem('lp-intro','1');d.classList.add('is-intro');setTimeout(function(){d.classList.remove('is-intro')},3200)}catch(e){}})()`;
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
@@ -74,16 +77,20 @@ export default async function LangLayout({
   if (!isLang(lang)) notFound();
 
   return (
-    <html lang={lang} className={`no-js ${geist.variable} ${geistMono.variable}`}>
+    <html lang={lang} className={`no-js ${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Active les animations d'apparition uniquement quand JavaScript est disponible. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: "document.documentElement.classList.replace('no-js','js')",
-          }}
-        />
+        {/* Animations d'apparition seulement avec JavaScript ; écran d'amorçage
+            une fois par session, jamais si le mouvement est réduit. */}
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPT }} />
       </head>
       <body>
+        <div className="boot-screen" aria-hidden="true">
+          <span className="boot-screen__line" />
+          <p className="boot-screen__label">
+            <span>{profile.name}</span>
+            <span className="boot-screen__count" />
+          </p>
+        </div>
         <a className="skip-link" href="#main">
           {t(ui.skip, lang)}
         </a>

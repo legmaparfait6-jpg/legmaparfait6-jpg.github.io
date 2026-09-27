@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { emit } from "@/lib/bus";
 
 export type MapSkill = { id: string; name: string; level: string | null; proof: "mission" | "practiced" | "notions"; missions: string[] };
@@ -14,6 +14,39 @@ type Labels = {
   noMission: string;
   proof: Record<MapSkill["proof"], string>;
 };
+
+const ROW = 54; // hauteur d'une ligne de mission (46 px) + espacement (8 px)
+
+/** Rayons : un tronc part de la technologie et rejoint chaque mission. */
+function Beam({ missions }: { missions: MapMission[] }) {
+  const height = missions.length * ROW - 8;
+  return (
+    <div className="beam">
+      <svg className="beam__svg" viewBox={`0 0 22 ${height}`} preserveAspectRatio="none" aria-hidden="true">
+        <circle className="beam__dot" cx="4" cy="0" r="2.5" style={{ animationDelay: "0ms" }} />
+        {missions.map((m, k) => {
+          const y = k * ROW + 23;
+          return (
+            <g key={m.slug} style={{ "--k": k } as CSSProperties}>
+              <path className="beam__path" d={`M4 0 V${y} H20`} style={{ "--len": y + 16 } as CSSProperties} />
+              <circle className="beam__dot" cx="20" cy={y} r="2.5" />
+            </g>
+          );
+        })}
+      </svg>
+      <div className="sysmap__missions">
+        {missions.map((m, k) => (
+          <a key={m.slug} className="sysmap__mission" href={m.href} style={{ "--k": k } as CSSProperties}>
+            <span>
+              <span className="meta">{m.code}</span> · {m.name}
+            </span>
+            <span aria-hidden="true">→</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Carte du système : chaque technologie est reliée aux missions qui
@@ -110,16 +143,7 @@ export function SystemMap({
         <div className="sysmap__row">
           <span className="meta">{labels.usedIn}</span>
           {usedIn.length > 0 ? (
-            <div className="sysmap__missions">
-              {usedIn.map((m) => (
-                <a key={m.slug} className="sysmap__mission" href={m.href}>
-                  <span>
-                    <span className="meta">{m.code}</span> · {m.name}
-                  </span>
-                  <span aria-hidden="true">→</span>
-                </a>
-              ))}
-            </div>
+            <Beam key={selected.id} missions={usedIn} />
           ) : (
             <p className="note">{labels.noMission}</p>
           )}

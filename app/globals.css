@@ -655,26 +655,27 @@ button {
 @media (prefers-reduced-motion: no-preference) {
   .boot > span {
     animation: boot-step 330ms steps(1, end) both;
+    animation-delay: var(--intro-delay, 0ms);
   }
 
   .boot > span:nth-child(1) {
-    animation-delay: 0ms;
+    animation-delay: var(--intro-delay, 0ms);
   }
 
   .boot > span:nth-child(2) {
-    animation-delay: 330ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 330ms);
   }
 
   .boot > span:nth-child(3) {
-    animation-delay: 660ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 660ms);
   }
 
   .boot > span:last-child {
-    animation: boot-final 1ms 990ms both;
+    animation: boot-final 1ms calc(var(--intro-delay, 0ms) + 990ms) both;
   }
 
   .boot-dot {
-    animation: boot-dot 1ms 990ms both;
+    animation: boot-dot 1ms calc(var(--intro-delay, 0ms) + 990ms) both;
   }
 }
 
@@ -756,26 +757,27 @@ button {
 @media (prefers-reduced-motion: no-preference) {
   .hero__intro > * {
     animation: rise 900ms var(--ease-out) both;
+    animation-delay: var(--intro-delay, 0ms);
   }
 
   .hero__intro > :nth-child(2) {
-    animation-delay: 120ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 120ms);
   }
 
   .hero__intro > :nth-child(3) {
-    animation-delay: 200ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 200ms);
   }
 
   .hero__intro > :nth-child(4) {
-    animation-delay: 1000ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 1000ms);
   }
 
   .hero__intro > :nth-child(5) {
-    animation-delay: 1100ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 1100ms);
   }
 
   .hero__intro > :nth-child(6) {
-    animation-delay: 1200ms;
+    animation-delay: calc(var(--intro-delay, 0ms) + 1200ms);
   }
 }
 
@@ -890,12 +892,12 @@ button {
 @media (prefers-reduced-motion: no-preference) {
   .trace__stage .trace__node {
     animation: node-on 400ms var(--ease-out) both;
-    animation-delay: calc(150ms + var(--i) * 95ms);
+    animation-delay: calc(var(--intro-delay, 0ms) + 150ms + var(--i) * 95ms);
   }
 
   .trace__stage .trace__label {
     animation: label-on 400ms var(--ease-out) both;
-    animation-delay: calc(150ms + var(--i) * 95ms);
+    animation-delay: calc(var(--intro-delay, 0ms) + 150ms + var(--i) * 95ms);
   }
 
   .trace__pulse {

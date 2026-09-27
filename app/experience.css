@@ -1,0 +1,320 @@
+/* =========================================================================
+   Expérience : amorçage, transitions de page, bandeau signal,
+   flux d'architecture animé, rayons de la carte des compétences.
+   ========================================================================= */
+
+/* ----- amorçage (première visite de la session) ----- */
+
+@property --boot-n {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.boot-screen {
+  display: none;
+}
+
+.is-intro {
+  --intro-delay: 1100ms;
+}
+
+.is-intro .boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: boot-screen-off 1ms 1500ms forwards;
+}
+
+/* Deux volets qui s'ouvrent sur le site. */
+.is-intro .boot-screen::before,
+.is-intro .boot-screen::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50.5%;
+  background: var(--bg);
+  animation: boot-shutter 520ms cubic-bezier(0.7, 0, 0.2, 1) 950ms forwards;
+}
+
+.is-intro .boot-screen::before {
+  top: 0;
+  --shutter: -100%;
+}
+
+.is-intro .boot-screen::after {
+  bottom: 0;
+  --shutter: 100%;
+}
+
+.boot-screen__line {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  height: 1px;
+  width: min(560px, 76vw);
+  background: var(--signal);
+  box-shadow: 0 0 18px 1px rgb(61 220 132 / 0.55);
+  transform: translate(-50%, -50%) scaleX(0);
+  animation:
+    boot-line 700ms cubic-bezier(0.65, 0, 0.35, 1) 120ms forwards,
+    boot-fade 300ms ease 1000ms forwards;
+}
+
+.boot-screen__label {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: calc(50% + 22px);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 18px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+  animation: boot-fade 250ms ease 950ms forwards;
+}
+
+.boot-screen__count {
+  color: var(--signal);
+  min-width: 3ch;
+  counter-reset: boot var(--boot-n);
+  animation: boot-count 780ms cubic-bezier(0.5, 0, 0.3, 1) 120ms forwards;
+}
+
+.boot-screen__count::after {
+  content: counter(boot, decimal-leading-zero) "%";
+}
+
+@keyframes boot-line {
+  to {
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+}
+
+@keyframes boot-count {
+  to {
+    --boot-n: 100;
+  }
+}
+
+@keyframes boot-shutter {
+  to {
+    transform: translateY(var(--shutter));
+  }
+}
+
+@keyframes boot-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes boot-screen-off {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* ----- transitions de page ----- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-enter {
+    animation: page-enter 620ms var(--ease-out) both;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(4px);
+  }
+}
+
+/* ----- bandeau du hero : un signal parcourt les étapes ----- */
+
+.trace__pulse {
+  display: block;
+  left: 0;
+  top: 20px;
+  width: 90px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trace__pulse {
+    animation: pulse-sweep 4.8s calc(var(--intro-delay, 0ms) + 1.6s) cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+}
+
+@keyframes pulse-sweep {
+  0% {
+    opacity: 0;
+    left: 0;
+  }
+  8%,
+  82% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+    left: calc(100% - 90px);
+  }
+}
+
+/* ----- carte des compétences : panneau en verre, rayons vers les missions ----- */
+
+.sysmap__panel {
+  background: rgb(15 17 20 / 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.beam {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  column-gap: 12px;
+}
+
+.beam .sysmap__mission {
+  min-height: 46px;
+}
+
+.beam__svg {
+  grid-row: 1 / -1;
+  width: 22px;
+  height: 100%;
+  overflow: visible;
+}
+
+.beam__path {
+  fill: none;
+  stroke: var(--signal);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgb(61 220 132 / 0.7));
+}
+
+.beam__dot {
+  fill: var(--signal);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .beam__path {
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+    animation: beam-draw 700ms var(--ease-out) forwards;
+    animation-delay: calc(var(--k) * 110ms);
+  }
+
+  .beam__dot {
+    opacity: 0;
+    animation: beam-dot 300ms ease forwards;
+    animation-delay: calc(var(--k) * 110ms + 520ms);
+  }
+
+  .beam .sysmap__mission {
+    opacity: 0;
+    animation: beam-item 420ms var(--ease-out) forwards;
+    animation-delay: calc(var(--k) * 110ms + 380ms);
+  }
+}
+
+@keyframes beam-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes beam-dot {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes beam-item {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ----- flux d'architecture : les données circulent d'étape en étape ----- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .flow--live .flow__step::before {
+    animation: flow-node calc(var(--n) * 900ms) linear infinite;
+    animation-delay: calc(var(--i) * 900ms);
+  }
+
+  /* Le lien vers l'étape suivante : une impulsion descend le fil. */
+  .flow--live .flow__step:not(:last-child)::after {
+    width: 2px;
+    left: 19.5px;
+    background:
+      linear-gradient(180deg, transparent, var(--signal), transparent) 0 -70% / 100% 40% no-repeat,
+      var(--line-strong);
+    animation: flow-wire calc(var(--n) * 900ms) linear infinite;
+    animation-delay: calc(var(--i) * 900ms);
+  }
+
+  .flow--live .flow__step .flow__label {
+    animation: flow-label calc(var(--n) * 900ms) linear infinite;
+    animation-delay: calc(var(--i) * 900ms);
+  }
+}
+
+@keyframes flow-node {
+  0%,
+  4% {
+    border-color: var(--signal);
+    box-shadow: 0 0 0 5px var(--signal-dim), 0 0 22px rgb(61 220 132 / 0.35);
+    color: var(--bg);
+    background: var(--signal);
+  }
+  16%,
+  100% {
+    border-color: var(--line-strong);
+    box-shadow: none;
+    color: var(--signal);
+    background: var(--bg-raised);
+  }
+}
+
+@keyframes flow-label {
+  0%,
+  8% {
+    color: var(--signal);
+  }
+  20%,
+  100% {
+    color: var(--text);
+  }
+}
+
+@keyframes flow-wire {
+  0%,
+  6% {
+    background-position: 0 -70%, 0 0;
+  }
+  22%,
+  100% {
+    background-position: 0 170%, 0 0;
+  }
+}

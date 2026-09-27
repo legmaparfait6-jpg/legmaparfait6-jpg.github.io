@@ -74,9 +74,11 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         emit("net:ready", { enabled: true });
       });
     };
+    // Pendant l'écran d'amorçage, la scène démarre à l'ouverture des volets.
     // Safari n'a pas requestIdleCallback : repli sur un court délai.
-    const idle = typeof window.requestIdleCallback === "function";
-    const handle = idle ? window.requestIdleCallback(load, { timeout: 1200 }) : window.setTimeout(load, 250);
+    const intro = document.documentElement.classList.contains("is-intro");
+    const idle = !intro && typeof window.requestIdleCallback === "function";
+    const handle = idle ? window.requestIdleCallback(load, { timeout: 1200 }) : window.setTimeout(load, intro ? 850 : 250);
 
     const onLost = (e: Event) => {
       e.preventDefault();
@@ -109,7 +111,7 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
     }
     const mission = pathname.match(/\/missions\/([^/]+)/);
     if (mission) {
-      engine.setState({ formation: "mission", opacity: 0.3, slug: mission[1] });
+      engine.setState({ formation: "mission", opacity: 0.2, slug: mission[1] });
       return;
     }
 

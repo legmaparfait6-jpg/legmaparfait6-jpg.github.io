@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Arrow } from "@/components/Section";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getMission, missions } from "@/content/missions";
@@ -142,9 +142,9 @@ export default async function MissionPage({ params }: Params) {
         <Block n={num()} title={l("architecture")}>
           <div className="dossier__body">
             <p>{t(mission.architecture.intro, lang)}</p>
-            <ol className="flow">
-              {mission.architecture.flow.map((step) => (
-                <li key={step.label.en} className="flow__step">
+            <ol className="flow flow--live" style={{ "--n": mission.architecture.flow.length } as CSSProperties}>
+              {mission.architecture.flow.map((step, i) => (
+                <li key={step.label.en} className="flow__step" style={{ "--i": i } as CSSProperties}>
                   <span className="flow__label">{t(step.label, lang)}</span>
                   <span className="flow__detail">{t(step.detail, lang)}</span>
                 </li>

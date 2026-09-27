@@ -141,6 +141,7 @@ export class NetworkEngine {
   private lastTime = 0;
   private elapsed = 0;
   private spawnClock = 0;
+  private focusClock = 0;
   private tmp = new Vector3();
   private tmp2 = new Vector3();
   private tmpColor = new Color();
@@ -457,7 +458,9 @@ export class NetworkEngine {
     const { formation, opacity: targetOpacity } = this.state;
     const desktop = this.width >= 960;
 
-    this.opacity = damp(this.opacity, targetOpacity * (desktop ? 1 : 0.6), 2.2, dt);
+    // Une technologie sélectionnée dans la carte rend la scène plus présente.
+    const focusBoost = this.focusIndex >= 0 && formation === "layers" ? 0.85 : 0;
+    this.opacity = damp(this.opacity, Math.max(targetOpacity, focusBoost) * (desktop ? 1 : 0.6), 2.2, dt);
     this.material.uniforms.uOpacity!.value = this.opacity;
     this.lineMaterial.opacity = this.opacity * 0.42;
 
@@ -600,6 +603,15 @@ export class NetworkEngine {
   }
 
   private updatePackets(dt: number, time: number) {
+    // Flux continu entre la technologie sélectionnée et ses missions.
+    if (this.focusIndex >= 0) {
+      this.focusClock += dt;
+      while (this.focusClock > 0.06) {
+        this.focusClock -= 0.06;
+        this.spawnOn(this.focusIndex, COLOR.signal, 1.2 + Math.random() * 0.8);
+      }
+    }
+
     // Trafic de fond une fois le système « en ligne ».
     if (time > 1.4) {
       this.spawnClock += dt;
@@ -680,7 +692,8 @@ export class NetworkEngine {
         const i = slug ? this.missionIndex.get(slug) : undefined;
         if (i !== undefined) {
           look.copy(world(i));
-          pos.copy(look).add(new Vector3(0, 1.1, this.diveBoost > 0.5 ? 2.2 : 3.6));
+          // Plongée rapprochée, puis recul pour laisser le texte lisible.
+          pos.copy(look).add(new Vector3(0, 1.4, this.diveBoost > 0.5 ? 2.4 : 6.2));
         }
         shift = desktop ? -2.4 : 0;
         break;
