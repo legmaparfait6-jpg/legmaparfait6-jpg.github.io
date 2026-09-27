@@ -2,9 +2,9 @@ import type { L } from "@/lib/i18n";
 
 /**
  * Identité et coordonnées. Source unique pour le portfolio, le CV et le SEO.
- * SITE_URL : à remplacer par le domaine définitif une fois choisi.
+ * SITE_URL : adresse GitHub Pages (dépôt legmaparfait6-jpg.github.io).
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://legma-portfolio.vercel.app";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://legmaparfait6-jpg.github.io";
 
 export const profile = {
   name: "Legma Parfait",
