@@ -3,7 +3,15 @@ import type { L } from "@/lib/i18n";
 /**
  * Contenu du CV (une page A4, lisible par les ATS). Les faits proviennent des
  * mêmes sources que les missions du portfolio.
+ * Dans les puces, **texte** est mis en gras (éléments clés, lus en premier).
  */
+
+export type CvSkill = { name: string | L; level?: L };
+
+const VERY_GOOD: L = { fr: "très bon", en: "very good" };
+const GOOD: L = { fr: "bon", en: "good" };
+const INTERMEDIATE: L = { fr: "intermédiaire", en: "intermediate" };
+const BASICS: L = { fr: "notions", en: "basics" };
 
 export const cv = {
   headings: {
@@ -11,10 +19,17 @@ export const cv = {
     experience: { fr: "Expérience", en: "Experience" },
     projects: { fr: "Projets", en: "Projects" },
     skills: { fr: "Compétences", en: "Skills" },
+    contact: { fr: "Contact", en: "Contact" },
     education: { fr: "Formation", en: "Education" },
-    certifications: { fr: "Certifications", en: "Certifications" },
+    certifications: { fr: "Certification", en: "Certification" },
     languages: { fr: "Langues", en: "Languages" },
+    portfolio: { fr: "Portfolio", en: "Portfolio" },
   } satisfies Record<string, L>,
+
+  tagline: {
+    fr: "Je construis des systèmes, pas seulement des interfaces.",
+    en: "I build systems, not just interfaces.",
+  } satisfies L,
 
   profile: {
     fr: "Étudiant en Licence 3 d'Informatique de Gestion, orienté développement Full-Stack et intégration de solutions IA. Expérience pratique dans la conception de solutions web et de supervision réseau, avec un intérêt particulier pour les applications SaaS, l'automatisation et la transformation de problématiques métier en solutions numériques.",
@@ -26,23 +41,23 @@ export const cv = {
       role: { fr: "Stagiaire développeur — supervision réseau", en: "Developer intern — network monitoring" },
       org: "Moov Africa",
       place: "Ouagadougou",
-      period: null as L | null,
+      period: { fr: "Stage de fin de Licence", en: "Final-year internship" } as L,
       bullets: [
         {
-          fr: "Conception et développement d'une application web de supervision réseau en Python / Flask (SQLAlchemy, MySQL).",
-          en: "Designed and built a network monitoring web application in Python / Flask (SQLAlchemy, MySQL).",
+          fr: "Conception et développement d'une **application web de supervision réseau** en **Python / Flask** (SQLAlchemy, MySQL).",
+          en: "Designed and built a **network monitoring web application** in **Python / Flask** (SQLAlchemy, MySQL).",
         },
         {
-          fr: "Découverte automatique des équipements (Nmap, ping ICMP parallélisé) et collecte SNMP : disponibilité, latence, CPU, RAM, interfaces.",
-          en: "Automatic device discovery (Nmap, parallel ICMP ping) and SNMP collection: availability, latency, CPU, RAM, interfaces.",
+          fr: "**Découverte automatique** des équipements (Nmap, ping ICMP parallélisé) et **collecte SNMP** : disponibilité, latence, CPU, RAM, interfaces.",
+          en: "**Automatic discovery** of devices (Nmap, parallel ICMP ping) and **SNMP collection**: availability, latency, CPU, RAM, interfaces.",
         },
         {
-          fr: "Cycle d'incident complet : alertes par seuils, tickets avec SLA par priorité, escalade automatique sur trois niveaux, notifications e-mail.",
-          en: "Full incident lifecycle: threshold alerts, tickets with per-priority SLAs, automatic three-level escalation, email notifications.",
+          fr: "Cycle d'incident complet : alertes par seuils, tickets avec **SLA par priorité**, **escalade automatique** sur trois niveaux, notifications e-mail.",
+          en: "Full incident lifecycle: threshold alerts, tickets with **per-priority SLAs**, **automatic escalation** over three levels, email notifications.",
         },
         {
-          fr: "Rapports SLA / MTTR exportables en CSV et PDF ; tâches planifiées pour la supervision, la sauvegarde et la rétention des données. Application validée en environnement de laboratoire.",
-          en: "SLA / MTTR reports exported to CSV and PDF; scheduled jobs for monitoring, backups and data retention. Application validated in a lab environment.",
+          fr: "Rapports **SLA / MTTR** en CSV et PDF ; tâches planifiées (supervision, sauvegarde, rétention). Validée en environnement de laboratoire.",
+          en: "**SLA / MTTR** reports in CSV and PDF; scheduled jobs (monitoring, backups, retention). Validated in a lab environment.",
         },
       ] satisfies L[],
     },
@@ -51,49 +66,58 @@ export const cv = {
   projects: [
     {
       name: "FasoCommerce",
-      desc: { fr: "Plateforme SaaS de gestion pour commerces et services (pré-lancement)", en: "SaaS management platform for shops and services (pre-launch)" },
+      status: { fr: "Pré-lancement", en: "Pre-launch" } as L,
+      desc: { fr: "Plateforme SaaS de gestion pour commerces et services", en: "SaaS management platform for shops and services" },
       stack: "Next.js · TypeScript · FastAPI · PostgreSQL · Docker",
       period: { fr: "Depuis juin 2026", en: "Since June 2026" } as L | null,
+      metrics: [
+        { fr: "15 modules", en: "15 modules" },
+        { fr: "13 profils métier", en: "13 trade profiles" },
+        { fr: "207 tests backend", en: "207 backend tests" },
+      ] satisfies L[],
       bullets: [
         {
-          fr: "Architecture en monolithe modulaire : 15 modules activables selon le métier (commerce, restaurant, pressing, auto-école, garage).",
-          en: "Modular monolith architecture: 15 modules switched on per trade (retail, restaurant, dry cleaning, driving school, garage).",
+          fr: "**Monolithe modulaire** : chaque commerce active les modules de son métier (restaurant, pressing, auto-école, garage…).",
+          en: "**Modular monolith**: each business turns on the modules its trade needs (restaurant, dry cleaning, driving school, garage…).",
         },
         {
-          fr: "Caisse utilisable hors ligne, paiement Mobile Money, commandes WhatsApp, tickets pour imprimante thermique.",
-          en: "Offline-capable point of sale, Mobile Money payment, WhatsApp orders, thermal printer receipts.",
-        },
-        {
-          fr: "Qualité : 207 tests backend (pytest), tests end-to-end et d'accessibilité (Playwright), intégration continue (GitHub Actions).",
-          en: "Quality: 207 backend tests (pytest), end-to-end and accessibility tests (Playwright), continuous integration (GitHub Actions).",
+          fr: "**Caisse hors ligne**, paiement **Mobile Money**, commandes WhatsApp ; tests **end-to-end et d'accessibilité**, intégration continue.",
+          en: "**Offline point of sale**, **Mobile Money** payment, WhatsApp orders; **end-to-end and accessibility** tests, continuous integration.",
         },
       ] satisfies L[],
     },
     {
       name: "ForexSaaS",
+      status: { fr: "En pause", en: "Paused" } as L,
       desc: { fr: "Outil d'aide à la décision sur données de marché", en: "Decision-support tool on market data" },
       stack: "Python · FastAPI · pandas · Celery · Next.js",
       period: null as L | null,
+      metrics: [
+        { fr: "3 sources de données", en: "3 data sources" },
+        { fr: "5 analyseurs", en: "5 analysers" },
+      ] satisfies L[],
       bullets: [
         {
-          fr: "Chaîne collecte → analyse → scoring → alertes, alimentée par trois sources de données (Twelve Data, FRED, Finnhub).",
-          en: "Collection → analysis → scoring → alerts pipeline fed by three data sources (Twelve Data, FRED, Finnhub).",
+          fr: "Chaîne **collecte → analyse → scoring → alertes** (Twelve Data, FRED, Finnhub), tâches Celery découplées.",
+          en: "**Collection → analysis → scoring → alerts** pipeline (Twelve Data, FRED, Finnhub), decoupled Celery jobs.",
         },
         {
-          fr: "Scores de confluence et de confiance, calcul du risque par paire de devises, backtesting sur données historiques.",
-          en: "Confluence and confidence scores, per-pair risk calculation, backtesting on historical data.",
+          fr: "Scores de confluence et de confiance, calcul du risque par paire, **backtesting** sur données historiques.",
+          en: "Confluence and confidence scores, per-pair risk calculation, **backtesting** on historical data.",
         },
       ] satisfies L[],
     },
     {
       name: "Taxi Compteur",
-      desc: { fr: "Application mobile (projet académique)", en: "Mobile app (academic project)" },
+      status: { fr: "Projet académique", en: "Academic project" } as L,
+      desc: { fr: "Application mobile de courses en temps réel", en: "Real-time ride-hailing mobile app" },
       stack: "Flutter · Firebase",
       period: null as L | null,
+      metrics: [] as L[],
       bullets: [
         {
-          fr: "Courses en temps réel entre clients et chauffeurs, suivi GPS, tarif calculé selon la distance.",
-          en: "Real-time rides between customers and drivers, GPS tracking, distance-based fare.",
+          fr: "Modes client et chauffeur, **suivi GPS**, tarif calculé selon la distance, synchronisation **temps réel** Firebase.",
+          en: "Customer and driver modes, **GPS tracking**, distance-based fare, **real-time** Firebase sync.",
         },
       ] satisfies L[],
     },
@@ -102,47 +126,57 @@ export const cv = {
   skills: [
     {
       group: { fr: "Backend", en: "Backend" },
-      items: {
-        fr: "Python (très bon), Flask, FastAPI, Laravel (intermédiaire), API REST, authentification JWT, SQLAlchemy, Celery",
-        en: "Python (very good), Flask, FastAPI, Laravel (intermediate), REST APIs, JWT authentication, SQLAlchemy, Celery",
-      },
+      items: [
+        { name: "Python", level: VERY_GOOD },
+        { name: "FastAPI" },
+        { name: "Flask" },
+        { name: "Laravel", level: INTERMEDIATE },
+        { name: { fr: "API REST", en: "REST APIs" } },
+        { name: "JWT" },
+      ],
     },
     {
       group: { fr: "Frontend", en: "Frontend" },
-      items: {
-        fr: "JavaScript (bon), TypeScript, React, Next.js, Angular (intermédiaire), HTML, CSS, Tailwind CSS",
-        en: "JavaScript (good), TypeScript, React, Next.js, Angular (intermediate), HTML, CSS, Tailwind CSS",
-      },
+      items: [
+        { name: "JavaScript", level: GOOD },
+        { name: "TypeScript" },
+        { name: "React", level: INTERMEDIATE },
+        { name: "Next.js", level: INTERMEDIATE },
+        { name: "Angular", level: INTERMEDIATE },
+        { name: "HTML / CSS" },
+        { name: "WordPress" },
+      ],
     },
     {
       group: { fr: "Mobile", en: "Mobile" },
-      items: { fr: "Flutter, Firebase, Ionic (notions)", en: "Flutter, Firebase, Ionic (basics)" },
+      items: [{ name: "Flutter" }, { name: "Firebase" }, { name: "Ionic", level: BASICS }],
     },
     {
       group: { fr: "Données", en: "Data" },
-      items: { fr: "SQL, PostgreSQL, MySQL, Alembic, Redis, pandas", en: "SQL, PostgreSQL, MySQL, Alembic, Redis, pandas" },
+      items: [{ name: "PostgreSQL" }, { name: "MySQL" }, { name: "SQL" }, { name: "Redis" }, { name: "pandas" }],
     },
     {
       group: { fr: "DevOps et qualité", en: "DevOps and quality" },
-      items: {
-        fr: "Git, GitHub Actions, Docker, pytest, Playwright, Vercel, Netlify",
-        en: "Git, GitHub Actions, Docker, pytest, Playwright, Vercel, Netlify",
-      },
+      items: [
+        { name: "Git" },
+        { name: "GitHub Actions" },
+        { name: "Docker" },
+        { name: "pytest" },
+        { name: "Playwright" },
+        { name: "Vercel / Netlify" },
+      ],
     },
     {
       group: { fr: "Réseaux", en: "Networking" },
-      items: { fr: "Nmap, SNMP, ICMP, TCP/IP, supervision", en: "Nmap, SNMP, ICMP, TCP/IP, monitoring" },
+      items: [{ name: "Nmap" }, { name: "SNMP" }, { name: "ICMP" }, { name: "TCP/IP" }],
     },
     {
       group: { fr: "IA et automatisation", en: "AI and automation" },
-      items: {
-        fr: "Tâches planifiées, analyse de données, intégration d'API, conception de workflows",
-        en: "Scheduled jobs, data analysis, API integration, workflow design",
-      },
+      items: [
+        { name: { fr: "Tâches planifiées", en: "Scheduled jobs" } },
+        { name: { fr: "Analyse de données", en: "Data analysis" } },
+        { name: { fr: "Intégration d'API", en: "API integration" } },
+      ],
     },
-    {
-      group: { fr: "CMS", en: "CMS" },
-      items: { fr: "WordPress", en: "WordPress" },
-    },
-  ] satisfies { group: L; items: L }[],
+  ] satisfies { group: L; items: CvSkill[] }[],
 };
