@@ -147,6 +147,39 @@ export const method = {
   ] satisfies { name: string; text: L; proof: L }[],
 };
 
+export const live = {
+  eyebrow: { fr: "En direct", en: "Live ops" } satisfies L,
+  title: {
+    fr: "Une panne, détectée, escaladée, résolue.",
+    en: "An outage, detected, escalated, resolved.",
+  } satisfies L,
+  lead: {
+    fr: "Voici ce que fait l'application de supervision développée pendant mon stage, rejouée en simulation : les mêmes règles, un temps accéléré.",
+    en: "This is what the monitoring application I built during my internship does, replayed as a simulation: the same rules, accelerated time.",
+  } satisfies L,
+  badge: { fr: "Simulation", en: "Simulation" } satisfies L,
+  logTitle: { fr: "supervision · journal", en: "monitoring · log" } satisfies L,
+  replay: { fr: "Relancer la simulation", en: "Replay the simulation" } satisfies L,
+  mission: { fr: "Voir la mission 001", en: "See mission 001" } satisfies L,
+  rulesTitle: { fr: "Règles réelles appliquées", en: "Real rules applied" } satisfies L,
+  rules: [
+    { fr: "Panne déclarée après 3 échecs consécutifs", en: "Outage declared after 3 consecutive failures" },
+    { fr: "SLA critique : 180 minutes", en: "Critical SLA: 180 minutes" },
+    { fr: "Escalade automatique jusqu'au niveau 3", en: "Automatic escalation up to level 3" },
+    { fr: "Ticket au format TK-AAAAMMJJ-NNNN", en: "Ticket format TK-YYYYMMDD-NNNN" },
+  ] satisfies L[],
+  states: {
+    idle: { fr: "Tous les équipements répondent", en: "All devices responding" },
+    probe: { fr: "Sonde en cours", en: "Probing" },
+    down: { fr: "Équipement en panne", en: "Device down" },
+    alert: { fr: "Alerte critique", en: "Critical alert" },
+    ticket: { fr: "Ticket ouvert", en: "Ticket open" },
+    escalate: { fr: "Escalade", en: "Escalation" },
+    recover: { fr: "Rétablissement", en: "Recovering" },
+    resolved: { fr: "Incident résolu", en: "Incident resolved" },
+  } satisfies Record<string, L>,
+};
+
 export const skillsIntro = {
   eyebrow: { fr: "Carte du système", en: "System map" } satisfies L,
   title: {

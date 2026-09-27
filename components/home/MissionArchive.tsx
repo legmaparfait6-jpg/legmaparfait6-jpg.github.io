@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import Link from "next/link";
+import { DiveLink } from "@/components/DiveLink";
 import { Arrow, Section } from "@/components/Section";
 import { StatusBadge } from "@/components/StatusBadge";
 import { missions } from "@/content/missions";
@@ -8,7 +8,7 @@ import { type Lang, t } from "@/lib/i18n";
 
 export function MissionArchive({ lang }: { lang: Lang }) {
   return (
-    <Section id="projects" index="04" eyebrow={t(archive.eyebrow, lang)} title={t(archive.title, lang)}>
+    <Section id="projects" index="05" eyebrow={t(archive.eyebrow, lang)} title={t(archive.title, lang)}>
       <ol className="archive">
         {missions.map((mission, i) => {
           const featured = mission.screenshots.length > 0;
@@ -27,9 +27,9 @@ export function MissionArchive({ lang }: { lang: Lang }) {
 
               <div className="mission-row__main">
                 <h3 className="mission-row__name">
-                  <Link className="mission-row__link" href={`/${lang}/missions/${mission.slug}/`}>
+                  <DiveLink className="mission-row__link" href={`/${lang}/missions/${mission.slug}/`} slug={mission.slug}>
                     {mission.name}
-                  </Link>
+                  </DiveLink>
                 </h3>
                 <p className="mission-row__context">{t(mission.context, lang)}</p>
                 <p className="mission-row__summary">

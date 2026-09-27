@@ -6,7 +6,7 @@ import { type Lang, t } from "@/lib/i18n";
 export function Journey({ lang }: { lang: Lang }) {
   const last = journey.steps.length - 1;
   return (
-    <Section id="journey" index="07" eyebrow={t(journey.eyebrow, lang)} title={t(journey.title, lang)}>
+    <Section id="journey" index="08" eyebrow={t(journey.eyebrow, lang)} title={t(journey.title, lang)}>
       <ol className="journey">
         {journey.steps.map((step, i) => (
           <li

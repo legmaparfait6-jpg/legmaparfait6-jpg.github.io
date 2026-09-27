@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { play } from "@/lib/sound";
 
 export function CopyButton({ value, label, done }: { value: string; label: string; done: string }) {
   const [copied, setCopied] = useState(false);
@@ -15,6 +16,7 @@ export function CopyButton({ value, label, done }: { value: string; label: strin
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      play("copy");
     } catch {
       // Presse-papiers indisponible (contexte non sécurisé) : le lien reste utilisable.
     }

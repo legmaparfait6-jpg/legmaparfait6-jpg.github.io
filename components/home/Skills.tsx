@@ -1,6 +1,6 @@
 import { Section } from "@/components/Section";
 import { missions } from "@/content/missions";
-import { PROOF_LABEL, skillLayers, skillName } from "@/content/skills";
+import { PROOF_LABEL, skillId, skillLayers, skillName } from "@/content/skills";
 import { skillsIntro } from "@/content/story";
 import { type Lang, t } from "@/lib/i18n";
 import { type MapLayer, SystemMap } from "./SystemMap";
@@ -11,7 +11,7 @@ export function Skills({ lang }: { lang: Lang }) {
     label: t(layer.label, lang),
     hint: t(layer.hint, lang),
     skills: layer.skills.map((skill) => ({
-      id: `${layer.id}-${skillName(skill, "en").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      id: skillId(layer.id, skill),
       name: skillName(skill, lang),
       level: skill.level ? t(skill.level, lang) : null,
       proof: skill.proof,
@@ -22,7 +22,7 @@ export function Skills({ lang }: { lang: Lang }) {
   return (
     <Section
       id="skills"
-      index="03"
+      index="04"
       eyebrow={t(skillsIntro.eyebrow, lang)}
       title={t(skillsIntro.title, lang)}
     >

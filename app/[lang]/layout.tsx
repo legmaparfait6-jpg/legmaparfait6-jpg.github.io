@@ -2,11 +2,18 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
+import "../network.css";
+import { CommandPalette } from "@/components/CommandPalette";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { NetworkStage } from "@/components/network/NetworkStage";
+import { Probe } from "@/components/network/Probe";
 import { RevealObserver } from "@/components/RevealObserver";
+import { SoundInit } from "@/components/SoundInit";
+import { buildGraph } from "@/content/graph";
+import { missions } from "@/content/missions";
 import { SITE_URL, profile } from "@/content/profile";
-import { ui } from "@/content/story";
+import { live, nav, ui } from "@/content/story";
 import { LANGS, isLang, t } from "@/lib/i18n";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
@@ -81,10 +88,24 @@ export default async function LangLayout({
           {t(ui.skip, lang)}
         </a>
         <div className="progress-bar" aria-hidden="true" />
+        <NetworkStage graph={buildGraph(lang)} />
         <Header lang={lang} />
         <main id="main">{children}</main>
         <Footer lang={lang} />
         <RevealObserver />
+        <Probe />
+        <SoundInit />
+        <CommandPalette
+          lang={lang}
+          missions={missions.map((m) => ({ slug: m.slug, code: m.code, name: m.name }))}
+          sections={[
+            ...nav.slice(1).map((s) => ({ id: s.id, label: t(s.label, lang) })),
+            { id: "live", label: t(live.eyebrow, lang) },
+          ]}
+          email={profile.email}
+          github={profile.github.url}
+          cv={profile.cv[lang]}
+        />
       </body>
     </html>
   );

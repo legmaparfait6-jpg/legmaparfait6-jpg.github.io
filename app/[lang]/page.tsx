@@ -4,6 +4,7 @@ import { Finale } from "@/components/home/Finale";
 import { Hero } from "@/components/home/Hero";
 import { Journey } from "@/components/home/Journey";
 import { AiLayer, MobileLayer } from "@/components/home/Layers";
+import { LiveOps } from "@/components/home/LiveOps";
 import { Method } from "@/components/home/Method";
 import { MissionArchive } from "@/components/home/MissionArchive";
 import { Skills } from "@/components/home/Skills";
@@ -34,6 +35,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       <Hero lang={lang} />
       <About lang={lang} />
       <Method lang={lang} />
+      <LiveOps lang={lang} />
       <Skills lang={lang} />
       <MissionArchive lang={lang} />
       <AiLayer lang={lang} />

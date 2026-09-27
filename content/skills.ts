@@ -37,6 +37,10 @@ export const PROOF_LABEL: Record<Proof, L> = {
 export const skillName = (skill: Skill, lang: "fr" | "en") =>
   typeof skill.name === "string" ? skill.name : skill.name[lang];
 
+/** Identifiant stable, partagé par la carte des compétences et la scène 3D. */
+export const skillId = (layerId: string, skill: Skill) =>
+  `${layerId}-${skillName(skill, "en").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
 export const skillLayers: SkillLayer[] = [
   {
     id: "interface",

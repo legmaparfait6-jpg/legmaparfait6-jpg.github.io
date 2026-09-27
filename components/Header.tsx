@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { profile } from "@/content/profile";
 import { nav, ui } from "@/content/story";
+import { emit, on } from "@/lib/bus";
 import { type Lang, otherLang, t } from "@/lib/i18n";
+import { setSound } from "@/lib/sound";
 
 /**
  * En-tête : navigation par section, section active mise en évidence,
@@ -16,7 +18,10 @@ export function Header({ lang }: { lang: Lang }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("home");
+  const [sound, setSoundState] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => on("ui:sound", ({ enabled }) => setSoundState(enabled)), []);
 
   const isHome = pathname === `/${lang}/` || pathname === `/${lang}`;
   const switchHref = pathname.replace(/^\/(fr|en)/, `/${otherLang(lang)}`);
@@ -93,6 +98,23 @@ export function Header({ lang }: { lang: Lang }) {
         </nav>
 
         <div className="header__actions">
+          <button
+            type="button"
+            className="icon-btn palette-trigger"
+            onClick={() => emit("ui:palette", { open: true })}
+            aria-label={lang === "fr" ? "Ouvrir la palette de commandes (Ctrl + K)" : "Open the command palette (Ctrl + K)"}
+          >
+            <kbd>Ctrl K</kbd>
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-pressed={sound}
+            aria-label={lang === "fr" ? "Sons d'interface" : "Interface sounds"}
+            onClick={() => setSound(!sound)}
+          >
+            <SoundIcon on={sound} />
+          </button>
           <Link className="lang-switch" href={switchHref} hrefLang={otherLang(lang)} aria-label={t(ui.switchLang, lang)}>
             {otherLang(lang).toUpperCase()}
           </Link>
@@ -135,9 +157,32 @@ export function Header({ lang }: { lang: Lang }) {
           <Link className="btn" href={switchHref} hrefLang={otherLang(lang)}>
             {t(ui.switchLang, lang)}
           </Link>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setOpen(false);
+              emit("ui:palette", { open: true });
+            }}
+          >
+            {lang === "fr" ? "Commandes ›_" : "Commands ›_"}
+          </button>
         </div>
       </div>
     </header>
+  );
+}
+
+function SoundIcon({ on: enabled }: { on: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2.5 6h2l3-2.5v9L4.5 10h-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      {enabled ? (
+        <path d="M10.2 5.8a3 3 0 0 1 0 4.4M12 4a5.5 5.5 0 0 1 0 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      ) : (
+        <path d="m10.5 6.5 3 3m0-3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      )}
+    </svg>
   );
 }
 

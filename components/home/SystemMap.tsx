@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { emit } from "@/lib/bus";
 
 export type MapSkill = { id: string; name: string; level: string | null; proof: "mission" | "practiced" | "notions"; missions: string[] };
 export type MapLayer = { id: string; label: string; hint: string; skills: MapSkill[] };
@@ -31,6 +32,14 @@ export function SystemMap({
   initial: string;
 }) {
   const [selectedId, setSelectedId] = useState(initial);
+  const [touched, setTouched] = useState(false);
+
+  // La sélection allume le nœud correspondant dans la scène 3D (après une
+  // première interaction, pour ne pas perturber le démarrage).
+  useEffect(() => {
+    if (touched) emit("net:focus", { nodeId: selectedId });
+  }, [selectedId, touched]);
+  useEffect(() => () => emit("net:focus", { nodeId: null }), []);
 
   const all = useMemo(() => layers.flatMap((l) => l.skills.map((s) => ({ ...s, layer: l.id }))), [layers]);
   const selected = all.find((s) => s.id === selectedId) ?? all[0]!;
@@ -68,7 +77,10 @@ export function SystemMap({
                   data-related={related.has(skill.id) || undefined}
                   aria-pressed={skill.id === selected.id}
                   aria-controls="sysmap-panel"
-                  onClick={() => setSelectedId(skill.id)}
+                  onClick={() => {
+                    setTouched(true);
+                    setSelectedId(skill.id);
+                  }}
                 >
                   <span className="chip__proof" aria-hidden="true" />
                   {skill.name}

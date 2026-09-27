@@ -37,7 +37,7 @@ export function Finale({ lang }: { lang: Lang }) {
       <div className="container">
         <p className="section__index meta" data-reveal="">
           <span className="dot dot--progress" aria-hidden="true" />
-          08 / {lang === "fr" ? "Contact" : "Contact"}
+          09 / {lang === "fr" ? "Contact" : "Contact"}
         </p>
         <h2 id="contact-title" className="finale__title" data-reveal="">
           {t(finale.title, lang)}

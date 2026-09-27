@@ -7,7 +7,7 @@ export function AiLayer({ lang }: { lang: Lang }) {
   return (
     <Section
       id="ai"
-      index="05"
+      index="06"
       eyebrow={t(aiLayer.eyebrow, lang)}
       title={t(aiLayer.title, lang)}
       lead={t(aiLayer.lead, lang)}
@@ -42,7 +42,7 @@ export function MobileLayer({ lang }: { lang: Lang }) {
   return (
     <Section
       id="mobile"
-      index="06"
+      index="07"
       eyebrow={t(mobileLayer.eyebrow, lang)}
       title={t(mobileLayer.title, lang)}
       lead={t(mobileLayer.lead, lang)}
