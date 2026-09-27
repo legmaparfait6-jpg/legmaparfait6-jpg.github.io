@@ -13,6 +13,17 @@ export const profile = {
   email: "legmaparfait6@gmail.com",
   phone: { display: "+226 72 61 81 67", href: "+22672618167" },
   github: { user: "legmaparfait6-jpg", url: "https://github.com/legmaparfait6-jpg" },
+  whatsapp: "22672618167",
+  /**
+   * Services externes (identifiants publics par conception, sans secret) :
+   * - web3formsKey : clé d'accès Web3Forms, les messages arrivent par e-mail ;
+   * - goatcounterCode : code du site GoatCounter (audience anonyme, sans cookies).
+   * Vide = fonction désactivée (le formulaire bascule sur l'e-mail).
+   */
+  integrations: {
+    web3formsKey: "",
+    goatcounterCode: "",
+  },
   photo: {
     src: "/profile/legma-parfait.webp",
     width: 612,

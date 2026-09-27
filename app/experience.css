@@ -266,6 +266,149 @@
   }
 }
 
+/* ----- contact : formulaire et coordonnées ----- */
+
+.finale__grid {
+  display: grid;
+  gap: 56px;
+  margin-top: 56px;
+}
+
+.finale__form {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.finale__form .finale__cta {
+  margin-top: 0;
+}
+
+.finale__grid .contact-list {
+  margin-top: 0;
+  grid-template-columns: 1fr;
+  align-self: start;
+}
+
+@media (min-width: 960px) {
+  .finale__grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: clamp(48px, 6vw, 96px);
+  }
+
+  .finale__grid .contact-list__row {
+    grid-template-columns: 96px 1fr auto;
+  }
+}
+
+.contact-form {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: rgb(15 17 20 / 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.contact-form__row {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .contact-form__row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 132px;
+  line-height: 1.55;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text-3);
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: none;
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px var(--signal-dim);
+}
+
+.field [aria-invalid="true"] {
+  border-color: var(--progress);
+}
+
+.field__error {
+  font-size: 0.875rem;
+  color: var(--progress);
+}
+
+.contact-form__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.contact-form__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.contact-form__foot .btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.contact-form__status {
+  font-size: 0.9375rem;
+}
+
+.contact-form__status[data-status="success"] {
+  color: var(--signal);
+}
+
+.contact-form__status[data-status="error"] {
+  color: var(--progress);
+}
+
 /* ----- transitions de page ----- */
 
 /* Uniquement lors d'un changement de page : le premier affichage n'est

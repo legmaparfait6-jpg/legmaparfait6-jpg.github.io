@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import "../globals.css";
 import "../network.css";
 import "../experience.css";
+import { Analytics } from "@/components/Analytics";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -102,6 +103,7 @@ export default async function LangLayout({
         <RevealObserver />
         <Probe />
         <SoundInit />
+        <Analytics code={profile.integrations.goatcounterCode} />
         <CommandPalette
           lang={lang}
           missions={missions.map((m) => ({ slug: m.slug, code: m.code, name: m.name }))}
