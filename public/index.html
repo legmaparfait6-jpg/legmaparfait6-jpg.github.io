@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Legma Parfait — Développeur Full-Stack & IA</title>
+    <meta name="description" content="Portfolio de Legma Parfait, développeur Full-Stack & IA à Ouagadougou." />
+    <link rel="canonical" href="/fr/" />
+    <link rel="alternate" hreflang="fr" href="/fr/" />
+    <link rel="alternate" hreflang="en" href="/en/" />
+    <link rel="alternate" hreflang="x-default" href="/fr/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0a0b0d" />
+    <!-- Redirection vers la langue du navigateur ; français par défaut. -->
+    <script>
+      (function () {
+        var lang = (navigator.language || "fr").toLowerCase().indexOf("en") === 0 ? "en" : "fr";
+        location.replace("/" + lang + "/" + location.hash);
+      })();
+    </script>
+    <noscript><meta http-equiv="refresh" content="0; url=/fr/" /></noscript>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0b0d; color: #a9aeb6; font: 14px/1.5 ui-monospace, Consolas, monospace; }
+      a { color: #edede8; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/fr/">Français</a> · <a href="/en/">English</a></p>
+  </body>
+</html>
