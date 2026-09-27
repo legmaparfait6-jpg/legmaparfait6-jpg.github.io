@@ -21,7 +21,7 @@ export const profile = {
    * Vide = fonction désactivée (le formulaire bascule sur l'e-mail).
    */
   integrations: {
-    web3formsKey: "",
+    web3formsKey: "bcb76532-3cce-41b7-8b22-e58616ccf48f",
     goatcounterCode: "",
   },
   photo: {
