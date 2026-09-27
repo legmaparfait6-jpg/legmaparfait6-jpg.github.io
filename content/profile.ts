@@ -38,9 +38,8 @@ export const profile = {
   certifications: [
     {
       name: { fr: "Bureautique et design — Word, Excel, PowerPoint, Canva", en: "Office and design — Word, Excel, PowerPoint, Canva" },
-      // Organisme et année à renseigner quand ils seront fournis.
-      issuer: null as string | null,
-      year: null as string | null,
+      issuer: "SAPSAP XENDER" as string | null,
+      year: "2023" as string | null,
     },
   ],
 } as const;
