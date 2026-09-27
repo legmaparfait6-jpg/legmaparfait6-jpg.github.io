@@ -24,10 +24,11 @@ import {
 } from "three";
 import type { GraphData, GraphNode } from "@/content/graph";
 import type { IncidentPhase } from "@/lib/bus";
+import { PortraitCloud } from "./portrait";
 
 export type Formation = "galaxy" | "layers" | "clusters" | "live" | "finale" | "mission";
 
-export type StageState = { formation: Formation; opacity: number; slug?: string };
+export type StageState = { formation: Formation; opacity: number; slug?: string; portrait?: boolean };
 
 type Options = { mobile: boolean; onHover: (node: GraphNode | null) => void };
 
@@ -133,6 +134,8 @@ export class NetworkEngine {
   private hovered = -1;
   private diveBoost = 0;
   private rotation = 0;
+  private portrait: PortraitCloud | null = null;
+  private pointerPlane = new Vector3();
 
   private width = 1;
   private height = 1;
@@ -378,6 +381,13 @@ export class NetworkEngine {
     cancelAnimationFrame(this.raf);
   }
 
+  /** Nuage de points du portrait (données préparées par scripts/make-portrait-points.py). */
+  setPortrait(data: Uint16Array) {
+    this.portrait?.dispose();
+    this.portrait = new PortraitCloud(data, { mobile: this.options.mobile, ratio: this.renderer.getPixelRatio() });
+    this.scene.add(this.portrait.object);
+  }
+
   setState(state: StageState) {
     this.state = state;
   }
@@ -435,12 +445,14 @@ export class NetworkEngine {
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(this.width, this.height, false);
     this.material.uniforms.uPixelRatio!.value = ratio;
+    this.portrait?.setPixelRatio(ratio);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
   }
 
   dispose() {
     this.stop();
+    this.portrait?.dispose();
     this.nodeGeometry.dispose();
     this.lineGeometry.dispose();
     this.packetGeometry.dispose();
@@ -461,8 +473,10 @@ export class NetworkEngine {
     // Une technologie sélectionnée dans la carte rend la scène plus présente.
     const focusBoost = this.focusIndex >= 0 && formation === "layers" ? 0.85 : 0;
     this.opacity = damp(this.opacity, Math.max(targetOpacity, focusBoost) * (desktop ? 1 : 0.6), 2.2, dt);
-    this.material.uniforms.uOpacity!.value = this.opacity;
-    this.lineMaterial.opacity = this.opacity * 0.42;
+    // Le portrait au premier plan : le réseau s'efface en partie derrière lui.
+    const portraitVis = this.updatePortrait(dt, desktop);
+    this.material.uniforms.uOpacity!.value = this.opacity * (1 - 0.62 * portraitVis);
+    this.lineMaterial.opacity = this.opacity * 0.42 * (1 - 0.55 * portraitVis);
 
     // Rotation lente, figée quand la caméra doit viser un nœud précis.
     const still = formation === "live" || formation === "mission";
@@ -499,6 +513,21 @@ export class NetworkEngine {
     this.nodeGeometry.attributes.aAlpha!.needsUpdate = true;
     this.lineGeometry.attributes.position!.needsUpdate = true;
     this.lineGeometry.attributes.color!.needsUpdate = true;
+  }
+
+  /** Met à jour le portrait ; renvoie sa présence (0 à 1) pour atténuer le réseau. */
+  private updatePortrait(dt: number, desktop: boolean): number {
+    if (!this.portrait) return 0;
+    let pointer: Vector3 | null = null;
+    if (this.pointer.active && desktop) {
+      // Intersection du rayon pointeur avec le plan du portrait (z = 0).
+      this.tmp.set(this.pointer.nx, -this.pointer.ny, 0.5).unproject(this.camera).sub(this.camera.position).normalize();
+      const t = -this.camera.position.z / this.tmp.z;
+      if (t > 0) pointer = this.pointerPlane.copy(this.camera.position).addScaledVector(this.tmp, t);
+    }
+    const visible = this.state.portrait === true && this.state.formation === "galaxy";
+    this.portrait.update(dt, this.elapsed, visible, this.opacity, pointer);
+    return this.portrait.visibility;
   }
 
   private updateNodes(time: number, dt: number) {

@@ -72,6 +72,16 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         runtime.net = true;
         setReady(true);
         emit("net:ready", { enabled: true });
+
+        // Portrait en nuage de points (35 Ko), chargé une fois la scène lancée.
+        void fetch("/profile/portrait-points.bin")
+          .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(String(res.status)))))
+          .then((buffer) => {
+            if (!disposed) engine.setPortrait(new Uint16Array(buffer));
+          })
+          .catch(() => {
+            // Sans portrait, la scène reste complète.
+          });
       });
     };
     // La scène ne concurrence jamais le premier affichage : elle démarre après
@@ -130,7 +140,7 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
       return;
     }
 
-    engine.setState({ formation: "galaxy", opacity: 1 });
+    engine.setState({ formation: "galaxy", opacity: 1, portrait: true });
     const sections = Object.keys(SECTION_STATE)
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
@@ -139,7 +149,7 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const [formation, opacity] = SECTION_STATE[entry.target.id]!;
-          engine.setState({ formation, opacity });
+          engine.setState({ formation, opacity, portrait: entry.target.id === "home" });
         }
       },
       { rootMargin: "-45% 0px -45% 0px" },

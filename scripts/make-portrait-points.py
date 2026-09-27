@@ -14,7 +14,7 @@ import sys
 from array import array
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "public" / "profile" / "legma-parfait.webp"
@@ -25,31 +25,38 @@ COUNT = int(sys.argv[1]) if len(sys.argv) > 1 else 6000
 # Cadrage tête et épaules (pixels du portrait 612 x 765).
 CROP = (70, 20, 540, 600)
 STEP = 2  # échantillonnage d'un pixel sur deux
-FLOOR = 38  # en dessous : noir pur, aucun point
-GAMMA = 2.4  # > 1 : la lumière concentre fortement les points
-
 
 def main() -> None:
     random.seed(20260927)
-    img = Image.open(SOURCE).convert("L").crop(CROP)
-    w, h = img.size
+    rgb = Image.open(SOURCE).convert("RGB").crop(CROP)
+    gray = rgb.convert("L")
+    # Contours (silhouette du pull, traits du visage) sur une image adoucie.
+    edges = gray.filter(ImageFilter.GaussianBlur(2)).filter(ImageFilter.FIND_EDGES)
+    w, h = rgb.size
+
     cells, weights = [], []
-    for y in range(0, h, STEP):
-        for x in range(0, w, STEP):
-            lum = img.getpixel((x, y))
-            if lum <= FLOOR:
+    margin = 6  # le filtre de contours crée des artefacts sur les bords
+    for y in range(margin, h - margin, STEP):
+        for x in range(margin, w - margin, STEP):
+            r, _, b = rgb.getpixel((x, y))
+            lum = gray.getpixel((x, y)) / 255
+            # La peau tire vers le rouge ; le fond et le pull sont neutres ou bleutés.
+            skin = max(0.0, (r - b - 4) / 50)
+            edge = min(1.0, edges.getpixel((x, y)) / 22)
+            weight = 1.8 * skin * (0.35 + lum) + 3.0 * edge**1.3 + (0.015 if lum > 0.14 else 0)
+            if weight <= 0:
                 continue
-            cells.append((x, y, lum))
-            weights.append((lum - FLOOR) ** GAMMA)
+            intensity = min(1.0, 0.5 + 0.6 * lum) if skin > 0.15 else (0.42 if edge > 0.3 else 0.16)
+            cells.append((x, y, intensity))
+            weights.append(weight)
 
     picks = random.choices(cells, weights=weights, k=COUNT)
     data = array("H")
     preview = Image.new("RGB", (w, h), (10, 11, 13))
     draw = ImageDraw.Draw(preview)
-    for x, y, lum in picks:
+    for x, y, intensity in picks:
         jx = min(w - 1, max(0.0, x + random.uniform(-STEP / 2, STEP / 2)))
         jy = min(h - 1, max(0.0, y + random.uniform(-STEP / 2, STEP / 2)))
-        intensity = min(1.0, (lum - FLOOR) / (220 - FLOOR))
         data.extend([round(jx / w * 65535), round(jy / h * 65535), round(intensity * 65535)])
         c = int(60 + 195 * intensity)
         draw.point((jx, jy), fill=(int(c * 0.75), c, int(c * 0.82)))
