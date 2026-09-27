@@ -22,7 +22,7 @@ export const profile = {
    */
   integrations: {
     web3formsKey: "bcb76532-3cce-41b7-8b22-e58616ccf48f",
-    goatcounterCode: "",
+    goatcounterCode: "legmaparfait",
   },
   photo: {
     src: "/profile/legma-parfait.webp",
