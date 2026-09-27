@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { emit, runtime } from "@/lib/bus";
+import { buzz } from "@/lib/haptics";
 
 /**
  * Lien vers une mission : si la scène 3D est active, la caméra plonge dans
@@ -19,6 +20,7 @@ export function DiveLink({ href, slug, className, children }: { href: string; sl
         if (!runtime.net || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();
         emit("net:dive", { slug });
+        buzz(12);
         window.setTimeout(() => router.push(href), 480);
       }}
     >

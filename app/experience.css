@@ -409,6 +409,245 @@
   color: var(--progress);
 }
 
+/* ----- bus de données (bandes de technologies) ----- */
+
+.stack-bus {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  padding-block: 22px;
+  border-block: 1px solid var(--line);
+  background: rgb(10 11 13 / 0.7);
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.stack-bus__row {
+  display: flex;
+  width: max-content;
+}
+
+.stack-bus__track {
+  display: flex;
+  flex: none;
+}
+
+.stack-bus__track li {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  padding-right: 22px;
+  font-family: var(--font-mono);
+  font-size: clamp(0.8125rem, 0.75rem + 0.3vw, 1rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.stack-bus__track li::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--signal);
+  opacity: 0.7;
+}
+
+.stack-bus__row[data-direction="right"] .stack-bus__track li {
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stack-bus__row[data-direction="left"] {
+    animation: bus-left 60s linear infinite;
+  }
+
+  .stack-bus__row[data-direction="right"] {
+    animation: bus-right 70s linear infinite;
+  }
+
+  .stack-bus:hover .stack-bus__row {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes bus-left {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes bus-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* ----- pause typographique ----- */
+
+.statement {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(96px, 16vw, 220px);
+  border-top: 1px solid var(--line);
+}
+
+.statement__text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.28em;
+  font-size: clamp(2.6rem, 1rem + 7vw, 7.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.statement__word {
+  color: var(--text);
+}
+
+.statement__word:last-child {
+  color: var(--signal);
+}
+
+/* Du contour au plein, mot après mot, au rythme du défilement. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .statement__word {
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--line-strong);
+      animation: word-fill linear both;
+      animation-timeline: view();
+      animation-range: entry calc(20% + var(--i) * 12%) cover calc(38% + var(--i) * 10%);
+    }
+
+    .statement__word:last-child {
+      animation-name: word-fill-signal;
+    }
+  }
+}
+
+@keyframes word-fill {
+  to {
+    color: var(--text);
+    -webkit-text-stroke-color: transparent;
+  }
+}
+
+@keyframes word-fill-signal {
+  to {
+    color: var(--signal);
+    -webkit-text-stroke-color: transparent;
+  }
+}
+
+/* ----- mobile : missions à glisser, barre d'actions ----- */
+
+.archive__hint {
+  display: none;
+}
+
+@media (max-width: 699px) {
+  .archive__hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .archive {
+    grid-auto-flow: column;
+    grid-auto-columns: 86%;
+    gap: 12px;
+    border-top: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 4px var(--gutter) 12px;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+
+  .archive::-webkit-scrollbar {
+    display: none;
+  }
+
+  .archive .mission-row {
+    scroll-snap-align: start;
+    align-content: start;
+    padding: 22px;
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    background: rgb(15 17 20 / 0.82);
+  }
+
+  .archive .mission-row--featured .mission-row__visual {
+    display: none;
+  }
+
+  .archive .mission-row__name {
+    font-size: 1.6rem;
+  }
+}
+
+.dock {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .dock {
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    z-index: 45;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: rgb(15 17 20 / 0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+    transform: translate(-50%, 140%);
+    transition: transform 420ms var(--ease-out);
+  }
+
+  .dock[data-visible] {
+    transform: translate(-50%, 0);
+  }
+
+  /* Le pied de page ne passe pas sous la barre. */
+  .footer {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
+.dock__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--text-2);
+}
+
+.dock__item:active {
+  background: var(--surface-2);
+  color: var(--signal);
+}
+
 /* ----- transitions de page ----- */
 
 /* Uniquement lors d'un changement de page : le premier affichage n'est

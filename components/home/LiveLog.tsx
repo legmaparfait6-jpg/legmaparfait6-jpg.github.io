@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type IncidentPhase, emit, on } from "@/lib/bus";
 import type { Lang } from "@/lib/i18n";
+import { buzz } from "@/lib/haptics";
 import { play } from "@/lib/sound";
 
 type Step = { at: number; phase: IncidentPhase; level: "info" | "warn" | "ok"; tag: string; text: (ticket: string) => string };
@@ -65,8 +66,14 @@ export function LiveLog({
           setLines((prev) => [...prev, { time: clock(new Date()), tag: step.tag, text: step.text(ticket), level: step.level }]);
           setPhase(step.phase);
           emit("net:incident", { phase: step.phase });
-          if (step.phase === "down") play("alert");
-          else if (step.phase === "resolved") play("resolve");
+          if (step.phase === "down") {
+            play("alert");
+            buzz([30, 60, 30]);
+          }
+          else if (step.phase === "resolved") {
+            play("resolve");
+            buzz(15);
+          }
           else play("tick");
           if (i === steps.length - 1) {
             timers.current.push(

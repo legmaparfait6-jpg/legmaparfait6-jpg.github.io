@@ -7,6 +7,7 @@ import "../experience.css";
 import { Analytics } from "@/components/Analytics";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Header } from "@/components/Header";
+import { MobileDock } from "@/components/MobileDock";
 import { Footer } from "@/components/Footer";
 import { NetworkStage } from "@/components/network/NetworkStage";
 import { Probe } from "@/components/network/Probe";
@@ -104,6 +105,7 @@ export default async function LangLayout({
         <Probe />
         <SoundInit />
         <Analytics code={profile.integrations.goatcounterCode} />
+        <MobileDock lang={lang} cv={profile.cv[lang]} />
         <CommandPalette
           lang={lang}
           missions={missions.map((m) => ({ slug: m.slug, code: m.code, name: m.name }))}

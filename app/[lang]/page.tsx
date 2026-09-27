@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { About } from "@/components/home/About";
 import { Finale } from "@/components/home/Finale";
 import { Hero } from "@/components/home/Hero";
+import { Statement, StackBus } from "@/components/home/Interludes";
 import { Journey } from "@/components/home/Journey";
 import { AiLayer, MobileLayer } from "@/components/home/Layers";
 import { LiveOps } from "@/components/home/LiveOps";
@@ -34,11 +35,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }} />
       <Hero lang={lang} />
+      <StackBus lang={lang} />
       <About lang={lang} />
       <Method lang={lang} />
       <LiveOps lang={lang} />
       <Skills lang={lang} />
       <MissionArchive lang={lang} />
+      <Statement lang={lang} />
       <AiLayer lang={lang} />
       <MobileLayer lang={lang} />
       <Journey lang={lang} />

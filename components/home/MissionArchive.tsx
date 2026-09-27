@@ -9,6 +9,9 @@ import { type Lang, t } from "@/lib/i18n";
 export function MissionArchive({ lang }: { lang: Lang }) {
   return (
     <Section id="projects" index="05" eyebrow={t(archive.eyebrow, lang)} title={t(archive.title, lang)}>
+      <p className="archive__hint meta" aria-hidden="true">
+        {lang === "fr" ? "Glissez pour parcourir les missions" : "Swipe to browse the missions"} →
+      </p>
       <ol className="archive">
         {missions.map((mission, i) => {
           const featured = mission.screenshots.length > 0;

@@ -3,6 +3,7 @@
 import { type FormEvent, useId, useState } from "react";
 import { emit } from "@/lib/bus";
 import type { Lang } from "@/lib/i18n";
+import { buzz } from "@/lib/haptics";
 import { play } from "@/lib/sound";
 
 const TEXT = {
@@ -97,6 +98,7 @@ export function ContactForm({ lang, accessKey, email }: { lang: Lang; accessKey:
       setStatus("success");
       form.reset();
       play("copy");
+      buzz([20, 40, 20]);
       const box = form.getBoundingClientRect();
       emit("net:burst", { x: box.left + box.width / 2, y: box.top + box.height / 2 });
     } catch {

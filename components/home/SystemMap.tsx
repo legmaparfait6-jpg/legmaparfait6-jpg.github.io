@@ -2,6 +2,7 @@
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { emit } from "@/lib/bus";
+import { buzz } from "@/lib/haptics";
 
 export type MapSkill = { id: string; name: string; level: string | null; proof: "mission" | "practiced" | "notions"; missions: string[] };
 export type MapLayer = { id: string; label: string; hint: string; skills: MapSkill[] };
@@ -112,6 +113,7 @@ export function SystemMap({
                   aria-controls="sysmap-panel"
                   onClick={() => {
                     setTouched(true);
+                    buzz(8);
                     setSelectedId(skill.id);
                   }}
                 >
