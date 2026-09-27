@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
+import "./mission.css";
 import { Arrow } from "@/components/Section";
+import { MissionToc } from "@/components/mission/MissionToc";
+import { MissionVisual } from "@/components/mission/MissionVisual";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getMission, missions } from "@/content/missions";
 import { profile } from "@/content/profile";
@@ -53,9 +56,9 @@ const LABELS = {
   contact: { fr: "Échanger sur ce projet", en: "Talk about this project" },
 };
 
-function Block({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+function Block({ id, n, title, children }: { id: string; n: number; title: string; children: ReactNode }) {
   return (
-    <section className="dossier__block" data-reveal="">
+    <section id={id} className="dossier__block" data-reveal="">
       <header className="dossier__head">
         <span className="meta">{String(n).padStart(2, "0")}</span>
         <h2 className="dossier__title">{title}</h2>
@@ -74,9 +77,24 @@ export default async function MissionPage({ params }: Params) {
   const index = missions.findIndex((m) => m.slug === slug);
   const next = missions[(index + 1) % missions.length]!;
 
-  // Numérotation continue des rubriques présentes (aucune rubrique vide n'est affichée).
-  let n = 0;
-  const num = () => ++n;
+  // Rubriques présentes, dans l'ordre : elles alimentent le contenu et le sommaire.
+  // Aucune rubrique vide n'est affichée.
+  const order: (keyof typeof LABELS)[] = [
+    "context",
+    "problem",
+    "objective",
+    "architecture",
+    "technologies",
+    "features",
+    ...(mission.screenshots.length > 0 || mission.screenshotsNote ? (["screenshots"] as const) : []),
+    ...(mission.lenses ? (["lenses"] as const) : []),
+    "decisions",
+    ...(mission.challenges.length > 0 ? (["challenges"] as const) : []),
+    "result",
+    "evolution",
+    "links",
+  ];
+  const toc = order.map((id, i) => ({ id, n: i + 1, title: l(id) }));
 
   return (
     <article>
@@ -86,12 +104,25 @@ export default async function MissionPage({ params }: Params) {
             <Arrow direction="left" />
             {t(ui.backToArchive, lang)}
           </Link>
+          <div className="mission-hero__grid">
+          <div className="mission-hero__text">
           <div className="mission-hero__code">
             <span className="meta">Mission {mission.code}</span>
             <StatusBadge status={mission.status} lang={lang} />
           </div>
           <h1 className="mission-hero__title">{mission.name}</h1>
           <p className="mission-hero__summary">{t(mission.summary, lang)}</p>
+          <ul className="figures">
+            {mission.figures.map((f) => (
+              <li key={f.label.en} className="figures__item">
+                <span className="figures__value">{f.value}</span>
+                <span className="figures__label">{t(f.label, lang)}</span>
+              </li>
+            ))}
+          </ul>
+          </div>
+          <MissionVisual mission={mission} lang={lang} />
+          </div>
           <dl className="mission-meta">
             <div className="mission-meta__item">
               <dt className="meta">{l("frame")}</dt>
@@ -126,20 +157,22 @@ export default async function MissionPage({ params }: Params) {
         </div>
       </header>
 
-      <div className="container dossier">
-        <Block n={num()} title={l("context")}>
+      <div className="container mission-body">
+        <MissionToc items={toc} label={lang === "fr" ? "Sommaire de la mission" : "Mission contents"} />
+        <div className="dossier">
+        <Block id="context" n={order.indexOf("context") + 1} title={l("context")}>
           <p className="dossier__body dossier__body--lead">{t(mission.context_long, lang)}</p>
         </Block>
 
-        <Block n={num()} title={l("problem")}>
+        <Block id="problem" n={order.indexOf("problem") + 1} title={l("problem")}>
           <p className="dossier__body">{t(mission.problem, lang)}</p>
         </Block>
 
-        <Block n={num()} title={l("objective")}>
+        <Block id="objective" n={order.indexOf("objective") + 1} title={l("objective")}>
           <p className="dossier__body dossier__body--lead">{t(mission.objective, lang)}</p>
         </Block>
 
-        <Block n={num()} title={l("architecture")}>
+        <Block id="architecture" n={order.indexOf("architecture") + 1} title={l("architecture")}>
           <div className="dossier__body">
             <p>{t(mission.architecture.intro, lang)}</p>
             <ol className="flow flow--live" style={{ "--n": mission.architecture.flow.length } as CSSProperties}>
@@ -153,7 +186,7 @@ export default async function MissionPage({ params }: Params) {
           </div>
         </Block>
 
-        <Block n={num()} title={l("technologies")}>
+        <Block id="technologies" n={order.indexOf("technologies") + 1} title={l("technologies")}>
           <div className="tech-groups">
             {mission.technologies.map((group) => (
               <div key={group.group.en} className="tech-group">
@@ -170,7 +203,7 @@ export default async function MissionPage({ params }: Params) {
           </div>
         </Block>
 
-        <Block n={num()} title={l("features")}>
+        <Block id="features" n={order.indexOf("features") + 1} title={l("features")}>
           <ul className="checklist">
             {mission.features.map((f) => (
               <li key={f.en}>{t(f, lang)}</li>
@@ -179,7 +212,7 @@ export default async function MissionPage({ params }: Params) {
         </Block>
 
         {mission.screenshots.length > 0 || mission.screenshotsNote ? (
-          <Block n={num()} title={l("screenshots")}>
+          <Block id="screenshots" n={order.indexOf("screenshots") + 1} title={l("screenshots")}>
             {mission.screenshots.length > 0 ? (
               <ul className="gallery">
                 {mission.screenshots.map((s) => (
@@ -205,7 +238,7 @@ export default async function MissionPage({ params }: Params) {
         ) : null}
 
         {mission.lenses ? (
-          <Block n={num()} title={l("lenses")}>
+          <Block id="lenses" n={order.indexOf("lenses") + 1} title={l("lenses")}>
             <div className="cards cards--4">
               {mission.lenses.map((lens) => (
                 <div key={lens.label.en} className="card">
@@ -217,7 +250,7 @@ export default async function MissionPage({ params }: Params) {
           </Block>
         ) : null}
 
-        <Block n={num()} title={l("decisions")}>
+        <Block id="decisions" n={order.indexOf("decisions") + 1} title={l("decisions")}>
           <div className="cards cards--2">
             {mission.decisions.map((d) => (
               <div key={d.title.en} className="card">
@@ -229,7 +262,7 @@ export default async function MissionPage({ params }: Params) {
         </Block>
 
         {mission.challenges.length > 0 ? (
-          <Block n={num()} title={l("challenges")}>
+          <Block id="challenges" n={order.indexOf("challenges") + 1} title={l("challenges")}>
             <div className="cards cards--2">
               {mission.challenges.map((c) => (
                 <div key={c.title.en} className="card">
@@ -241,11 +274,11 @@ export default async function MissionPage({ params }: Params) {
           </Block>
         ) : null}
 
-        <Block n={num()} title={l("result")}>
+        <Block id="result" n={order.indexOf("result") + 1} title={l("result")}>
           <p className="dossier__body dossier__body--lead">{t(mission.result, lang)}</p>
         </Block>
 
-        <Block n={num()} title={l("evolution")}>
+        <Block id="evolution" n={order.indexOf("evolution") + 1} title={l("evolution")}>
           <ul className="checklist checklist--next">
             {mission.evolution.map((e) => (
               <li key={e.en}>{t(e, lang)}</li>
@@ -253,7 +286,7 @@ export default async function MissionPage({ params }: Params) {
           </ul>
         </Block>
 
-        <Block n={num()} title={l("links")}>
+        <Block id="links" n={order.indexOf("links") + 1} title={l("links")}>
           <div className="dossier__body">
             <p>{t(mission.repo, lang)}</p>
             <p>
@@ -273,6 +306,7 @@ export default async function MissionPage({ params }: Params) {
           </span>
           <span className="next-mission__name">{next.name} →</span>
         </Link>
+        </div>
       </div>
     </article>
   );

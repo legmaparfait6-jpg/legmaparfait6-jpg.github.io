@@ -21,6 +21,8 @@ export type Mission = {
   role: L;
   period: L | null;
   summary: L;
+  /** Chiffres clés, tous vérifiables dans le code du projet. */
+  figures: { value: string; label: L }[];
   stack: string[];
   context_long: L;
   problem: L;
@@ -69,6 +71,12 @@ export const missions: Mission[] = [
       fr: "Découvrir les équipements réseau, les surveiller en continu et transformer chaque panne en incident suivi, avec des délais mesurés.",
       en: "Discover network devices, monitor them continuously and turn every failure into a tracked incident with measured response times.",
     },
+    figures: [
+      { value: "7", label: { fr: "étapes de traitement", en: "processing stages" } },
+      { value: "3", label: { fr: "niveaux d'escalade", en: "escalation levels" } },
+      { value: "1 min", label: { fr: "cycle de supervision", en: "monitoring cycle" } },
+      { value: "4", label: { fr: "tâches planifiées", en: "scheduled jobs" } },
+    ],
     stack: ["Python", "Flask", "Nmap", "SNMP", "MySQL"],
     context_long: {
       fr: "Stage de fin de Licence chez Moov Africa. Une équipe réseau doit savoir en permanence quels équipements répondent, lesquels se dégradent, et qui doit intervenir.",
@@ -242,6 +250,12 @@ export const missions: Mission[] = [
       fr: "Une plateforme de gestion pensée pour le téléphone, où chaque commerce ou service active les modules dont son métier a besoin.",
       en: "A phone-first management platform where each shop or service turns on the modules its trade needs.",
     },
+    figures: [
+      { value: "15", label: { fr: "modules activables", en: "switchable modules" } },
+      { value: "13", label: { fr: "profils métier", en: "trade profiles" } },
+      { value: "207", label: { fr: "tests backend", en: "backend tests" } },
+      { value: "3", label: { fr: "rôles d'équipe", en: "team roles" } },
+    ],
     stack: ["Next.js", "TypeScript", "FastAPI", "PostgreSQL", "Docker"],
     context_long: {
       fr: "Au Burkina Faso, beaucoup de commerces et de services gèrent ventes, stock, dettes clients et commandes WhatsApp à la main. Leur réalité : une connexion limitée, le paiement par Mobile Money et des métiers très différents.",
@@ -426,6 +440,12 @@ export const missions: Mission[] = [
       fr: "Une solution d'aide à la décision qui combine données de marché, analyse technique, analyse fondamentale et automatisation.",
       en: "A decision-support tool combining market data, technical analysis, fundamental analysis and automation.",
     },
+    figures: [
+      { value: "3", label: { fr: "sources de données", en: "data sources" } },
+      { value: "5", label: { fr: "analyseurs", en: "analysers" } },
+      { value: "3", label: { fr: "moteurs de score", en: "scoring engines" } },
+      { value: "1", label: { fr: "module de backtesting", en: "backtesting module" } },
+    ],
     stack: ["Python", "FastAPI", "pandas", "Celery", "Next.js"],
     context_long: {
       fr: "Le marché des devises produit en continu des données techniques (prix) et fondamentales (indicateurs macro-économiques). Les analyser à la main prend du temps et reste subjectif.",
@@ -569,6 +589,10 @@ export const missions: Mission[] = [
       fr: "Une académie numérique qui réunit formation, services digitaux et accompagnement.",
       en: "A digital academy bringing together training, digital services and support.",
     },
+    figures: [
+      { value: "4", label: { fr: "versions de la page vitrine", en: "landing page versions" } },
+      { value: "3", label: { fr: "piliers : formation, services, accompagnement", en: "pillars: training, services, support" } },
+    ],
     stack: ["HTML", "CSS", "JavaScript", "Django"],
     context_long: {
       fr: "Beaucoup de jeunes et de petites entreprises veulent utiliser les outils numériques, mais manquent d'un accompagnement concret et accessible.",
@@ -663,6 +687,10 @@ export const missions: Mission[] = [
       fr: "Une application mobile qui met en relation clients et chauffeurs de taxi, avec un tarif calculé selon la distance.",
       en: "A mobile app connecting customers and taxi drivers, with a fare computed from the distance.",
     },
+    figures: [
+      { value: "2", label: { fr: "modes : client et chauffeur", en: "modes: customer and driver" } },
+      { value: "≈ 1 900", label: { fr: "lignes de Dart", en: "lines of Dart" } },
+    ],
     stack: ["Flutter", "Dart", "Firebase"],
     context_long: {
       fr: "Projet réalisé dans le cadre de la formation, autour de la mobilité urbaine.",
