@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { DownloadIcon } from "@/components/Header";
 import { Arrow } from "@/components/Section";
+import { GuidedToggle, RadioTrigger } from "@/components/voice/RadioTrigger";
 import { profile } from "@/content/profile";
 import { hero, ui } from "@/content/story";
 import { type Lang, t } from "@/lib/i18n";
@@ -9,7 +10,7 @@ export function Hero({ lang }: { lang: Lang }) {
   const lastIndex = hero.trace.length - 1;
 
   return (
-    <section id="home" className="hero" aria-labelledby="home-title">
+    <section id="home" className="hero" aria-labelledby="home-title" data-transmission="01-hero">
       <div className="container hero__grid">
         <div className="hero__intro">
           {/* Séquence d'activation : CSS pur, 1 s, remplacée par l'état final si le mouvement est réduit. */}
@@ -45,6 +46,11 @@ export function Hero({ lang }: { lang: Lang }) {
               <DownloadIcon />
               {t(ui.downloadCv, lang)}
             </a>
+          </div>
+
+          <div className="hero__voice">
+            <RadioTrigger id="01-hero" lang={lang} variant="button" />
+            <GuidedToggle lang={lang} />
           </div>
         </div>
 

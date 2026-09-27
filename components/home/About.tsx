@@ -6,7 +6,7 @@ import { type Lang, t } from "@/lib/i18n";
 
 export function About({ lang }: { lang: Lang }) {
   return (
-    <Section id="about" index="01" eyebrow={t(about.eyebrow, lang)} title={t(about.title, lang)}>
+    <Section id="about" index="01" eyebrow={t(about.eyebrow, lang)} title={t(about.title, lang)} transmission={{ id: "02-mission", lang }}>
       <div className="about">
         <div className="about__text" data-reveal="">
           {about.paragraphs.map((p, i) => (

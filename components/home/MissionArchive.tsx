@@ -3,6 +3,8 @@ import { DiveLink } from "@/components/DiveLink";
 import { Arrow, Section } from "@/components/Section";
 import { StatusBadge } from "@/components/StatusBadge";
 import { missions } from "@/content/missions";
+import { transmissionFor } from "@/content/transmissions";
+import { RadioTrigger } from "@/components/voice/RadioTrigger";
 import { archive, ui } from "@/content/story";
 import { type Lang, t } from "@/lib/i18n";
 
@@ -26,6 +28,11 @@ export function MissionArchive({ lang }: { lang: Lang }) {
               <div className="mission-row__code">
                 <span className="meta">Mission {mission.code}</span>
                 <StatusBadge status={mission.status} lang={lang} />
+                {transmissionFor(mission.slug) ? (
+                  <span className="mission-row__radio">
+                    <RadioTrigger id={transmissionFor(mission.slug)!.id} lang={lang} />
+                  </span>
+                ) : null}
               </div>
 
               <div className="mission-row__main">

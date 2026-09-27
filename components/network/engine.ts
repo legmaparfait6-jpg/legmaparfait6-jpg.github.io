@@ -23,7 +23,7 @@ import {
   WebGLRenderer,
 } from "three";
 import type { GraphData, GraphNode } from "@/content/graph";
-import type { IncidentPhase } from "@/lib/bus";
+import { type IncidentPhase, runtime } from "@/lib/bus";
 import { PortraitCloud } from "./portrait";
 
 export type Formation = "galaxy" | "layers" | "clusters" | "live" | "finale" | "mission";
@@ -385,7 +385,10 @@ export class NetworkEngine {
   setPortrait(data: Uint16Array) {
     this.portrait?.dispose();
     this.portrait = new PortraitCloud(data, { mobile: this.options.mobile, ratio: this.renderer.getPixelRatio() });
-    this.scene.add(this.portrait.object);
+    // Attaché à la caméra : toujours de face, en arrière-plan, quelle que soit
+    // la formation du réseau.
+    this.camera.add(this.portrait.object);
+    if (!this.camera.parent) this.scene.add(this.camera);
   }
 
   setState(state: StageState) {
@@ -518,15 +521,30 @@ export class NetworkEngine {
   /** Met à jour le portrait ; renvoie sa présence (0 à 1) pour atténuer le réseau. */
   private updatePortrait(dt: number, desktop: boolean): number {
     if (!this.portrait) return 0;
+    const object = this.portrait.object;
+    // Place dans le champ de la caméra : à droite sur grand écran, plus bas et
+    // plus loin sur mobile pour laisser le texte lisible.
+    // Hors du hero, pendant une transmission : plus à droite et plus loin,
+    // pour qu'on le sente parler sans gêner la lecture.
+    const hero = this.state.portrait === true && this.state.formation === "galaxy";
+    const depth = desktop ? (hero ? 11.5 : 13) : 17;
+    object.position.set(desktop ? (hero ? 2.8 : 4.1) : 0, desktop ? (hero ? 0.45 : 0.1) : -2.3, -depth);
+
     let pointer: Vector3 | null = null;
     if (this.pointer.active && desktop) {
-      // Intersection du rayon pointeur avec le plan du portrait (z = 0).
-      this.tmp.set(this.pointer.nx, -this.pointer.ny, 0.5).unproject(this.camera).sub(this.camera.position).normalize();
-      const t = -this.camera.position.z / this.tmp.z;
-      if (t > 0) pointer = this.pointerPlane.copy(this.camera.position).addScaledVector(this.tmp, t);
+      // Pointeur ramené dans le plan du portrait (repère de la caméra).
+      const halfH = Math.tan(((this.camera.fov / 2) * Math.PI) / 180) * depth;
+      pointer = this.pointerPlane.set(
+        this.pointer.nx * halfH * this.camera.aspect - object.position.x,
+        -this.pointer.ny * halfH - object.position.y,
+        0,
+      );
     }
-    const visible = this.state.portrait === true && this.state.formation === "galaxy";
-    this.portrait.update(dt, this.elapsed, visible, this.opacity, pointer);
+
+    // Visible dans le hero, et partout pendant une transmission : c'est lui qui parle.
+    const speaking = runtime.voiceActive;
+    const opacity = hero ? this.opacity : speaking ? (desktop ? 0.62 : 0.45) : this.opacity;
+    this.portrait.update(dt, this.elapsed, hero || speaking, opacity, pointer, runtime.voiceLevel);
     return this.portrait.visibility;
   }
 
@@ -576,6 +594,11 @@ export class NetworkEngine {
         } else if (i !== this.incidentIndex) {
           alpha *= 0.3;
         }
+      }
+
+      if (runtime.voiceLevel > 0 && node) {
+        size *= 1 + runtime.voiceLevel * 0.45;
+        alpha = Math.min(1, alpha + runtime.voiceLevel * 0.3);
       }
 
       if (i === this.hovered) {

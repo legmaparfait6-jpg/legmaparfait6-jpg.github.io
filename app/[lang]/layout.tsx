@@ -8,6 +8,8 @@ import { Analytics } from "@/components/Analytics";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Header } from "@/components/Header";
 import { MobileDock } from "@/components/MobileDock";
+import { TransmissionPlayer } from "@/components/voice/TransmissionPlayer";
+import { transmissions } from "@/content/transmissions";
 import { Footer } from "@/components/Footer";
 import { NetworkStage } from "@/components/network/NetworkStage";
 import { Probe } from "@/components/network/Probe";
@@ -17,7 +19,7 @@ import { buildGraph } from "@/content/graph";
 import { missions } from "@/content/missions";
 import { SITE_URL, profile } from "@/content/profile";
 import { live, nav, ui } from "@/content/story";
-import { LANGS, isLang, t } from "@/lib/i18n";
+import { LANGS, isLang, t, typo } from "@/lib/i18n";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
@@ -106,6 +108,15 @@ export default async function LangLayout({
         <SoundInit />
         <Analytics code={profile.integrations.goatcounterCode} />
         <MobileDock lang={lang} cv={profile.cv[lang]} />
+        <TransmissionPlayer
+          lang={lang}
+          items={transmissions.map((tr) => ({
+            id: tr.id,
+            anchor: tr.anchor,
+            title: tr.title[lang],
+            lines: tr.lines[lang].map((line) => typo(line, lang)),
+          }))}
+        />
         <CommandPalette
           lang={lang}
           missions={missions.map((m) => ({ slug: m.slug, code: m.code, name: m.name }))}

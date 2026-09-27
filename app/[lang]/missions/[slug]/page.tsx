@@ -8,6 +8,8 @@ import { MissionToc } from "@/components/mission/MissionToc";
 import { MissionVisual } from "@/components/mission/MissionVisual";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getMission, missions } from "@/content/missions";
+import { transmissionFor } from "@/content/transmissions";
+import { RadioTrigger } from "@/components/voice/RadioTrigger";
 import { profile } from "@/content/profile";
 import { ui } from "@/content/story";
 import { type Lang, isLang, t } from "@/lib/i18n";
@@ -109,6 +111,7 @@ export default async function MissionPage({ params }: Params) {
           <div className="mission-hero__code">
             <span className="meta">Mission {mission.code}</span>
             <StatusBadge status={mission.status} lang={lang} />
+            {transmissionFor(mission.slug) ? <RadioTrigger id={transmissionFor(mission.slug)!.id} lang={lang} variant="button" /> : null}
           </div>
           <h1 className="mission-hero__title">{mission.name}</h1>
           <p className="mission-hero__summary">{t(mission.summary, lang)}</p>

@@ -16,10 +16,16 @@ export type BusEvents = {
   "ui:palette": { open: boolean };
   "ui:sound": { enabled: boolean };
   "ui:incident": { replay: true };
+  "voice:play": { id: string };
+  "voice:state": { id: string | null; playing: boolean; line: number; progress: number };
+  "voice:guided": { enabled: boolean };
 };
 
-/** État partagé minimal : la scène 3D est-elle active ? */
-export const runtime = { net: false };
+/**
+ * État partagé minimal : la scène 3D est-elle active ? Quel est le niveau
+ * de la voix en cours de lecture (0 à 1) ? Une transmission est-elle en cours ?
+ */
+export const runtime = { net: false, voiceLevel: 0, voiceActive: false };
 
 type Name = keyof BusEvents;
 

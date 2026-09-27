@@ -9,7 +9,14 @@ export function LiveOps({ lang }: { lang: Lang }) {
     string
   >;
   return (
-    <Section id="live" index="03" eyebrow={t(live.eyebrow, lang)} title={t(live.title, lang)} lead={t(live.lead, lang)}>
+    <Section
+      id="live"
+      index="03"
+      eyebrow={t(live.eyebrow, lang)}
+      title={t(live.title, lang)}
+      lead={t(live.lead, lang)}
+      transmission={{ id: "03-incident", lang }}
+    >
       <div className="live">
         <LiveLog
           lang={lang}

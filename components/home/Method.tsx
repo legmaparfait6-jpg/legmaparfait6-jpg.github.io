@@ -5,7 +5,7 @@ import { type Lang, t } from "@/lib/i18n";
 
 export function Method({ lang }: { lang: Lang }) {
   return (
-    <Section id="method" index="02" eyebrow={t(method.eyebrow, lang)} title={t(method.title, lang)}>
+    <Section id="method" index="02" eyebrow={t(method.eyebrow, lang)} title={t(method.title, lang)} transmission={{ id: "06-methode", lang }}>
       <ol className="method">
         {method.steps.map((step, i) => (
           <li

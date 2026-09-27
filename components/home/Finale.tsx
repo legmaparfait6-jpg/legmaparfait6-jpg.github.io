@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { profile } from "@/content/profile";
 import { finale, ui } from "@/content/story";
 import { type Lang, t } from "@/lib/i18n";
+import { RadioTrigger } from "@/components/voice/RadioTrigger";
 import { ContactForm } from "./ContactForm";
 import { CopyButton } from "./CopyButton";
 
@@ -45,11 +46,12 @@ export function Finale({ lang }: { lang: Lang }) {
   ];
 
   return (
-    <section id="contact" className="finale" aria-labelledby="contact-title">
+    <section id="contact" className="finale" aria-labelledby="contact-title" data-transmission="07-final">
       <div className="container">
         <p className="section__index meta" data-reveal="">
           <span className="dot dot--progress" aria-hidden="true" />
           09 / Contact
+          <RadioTrigger id="07-final" lang={lang} />
         </p>
         <h2 id="contact-title" className="finale__title" data-reveal="">
           {t(finale.title, lang)}

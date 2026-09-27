@@ -103,6 +103,22 @@ export function CommandPalette({ lang, missions, sections, email, github, cv }: 
         },
       },
       {
+        id: "transmission",
+        group: tx.system,
+        label: "play transmission",
+        hint: lang === "fr" ? "Écouter la voix du système" : "Hear the system voice",
+        keywords: "voice voix radio transmission listen écouter audio",
+        run: () => emit("voice:play", { id: "01-hero" }),
+      },
+      {
+        id: "guided",
+        group: tx.system,
+        label: "guided tour",
+        hint: lang === "fr" ? "Visite guidée : touchez une section pour l'écouter" : "Guided tour: tap a section to hear it",
+        keywords: "guided visite guidée tour voix voice",
+        run: () => emit("voice:guided", { enabled: true }),
+      },
+      {
         id: "incident",
         group: tx.system,
         label: tx.incident,
