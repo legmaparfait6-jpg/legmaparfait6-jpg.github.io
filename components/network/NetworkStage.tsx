@@ -44,7 +44,9 @@ function canRun3D(): boolean {
 async function loadPortrait(mobile: boolean): Promise<PortraitData | null> {
   const nav = navigator as Navigator & { deviceMemory?: number };
   const modest = (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4;
-  const count = mobile ? 16000 : modest ? 24000 : 36000;
+  // Particules (apparition, éclat) et finesse de la surface en relief.
+  const count = mobile ? 9000 : modest ? 14000 : 20000;
+  const cols = mobile ? 130 : modest ? 150 : 190;
   const fromWorker = await new Promise<PortraitData | null | undefined>((resolve) => {
     if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return resolve(undefined);
     try {
@@ -57,7 +59,7 @@ async function loadPortrait(mobile: boolean): Promise<PortraitData | null> {
         resolve(undefined);
         worker.terminate();
       };
-      worker.postMessage({ count });
+      worker.postMessage({ count, cols });
     } catch {
       resolve(undefined);
     }
@@ -66,7 +68,7 @@ async function loadPortrait(mobile: boolean): Promise<PortraitData | null> {
   try {
     const { buildPortrait, loadPortraitPixels } = await import("./portrait-build");
     const rig = await fetch("/profile/portrait-rig.json").then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
-    return buildPortrait(rig, await loadPortraitPixels(rig), count);
+    return buildPortrait(rig, await loadPortraitPixels(rig), count, cols);
   } catch {
     return null; // sans portrait, la scène reste complète
   }

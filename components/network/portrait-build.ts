@@ -26,6 +26,20 @@ export type PortraitRig = {
   classes: string;
 };
 
+export type Relief = {
+  position: Float32Array;
+  uv: Float32Array;
+  normal: Float32Array;
+  jaw: Float32Array;
+  shape: Float32Array;
+  blink: Float32Array;
+  head: Float32Array;
+  mask: Float32Array; // 1 sur le sujet, 0 sur le fond (bords adoucis)
+  mouth: Float32Array; // intérieur de la bouche
+  face: Float32Array; // 1 sur le maillage du visage
+  index: Uint32Array;
+};
+
 export type PortraitData = {
   count: number;
   position: Float32Array;
@@ -45,6 +59,12 @@ export type PortraitData = {
   height: number;
   /** Tête (cheveux compris) dans le repère du portrait : centre et hauteur. */
   frame: { x: number; y: number; height: number };
+  /** Surface en relief texturée par la photo. */
+  relief: Relief;
+  /** Pixels du cadrage (texture de la surface). */
+  pixels: { width: number; height: number; data: Uint8Array };
+  /** Haut et bas du cadrage dans le repère du portrait. */
+  bounds: { top: number; bottom: number };
 };
 
 const HAIR = 1;
@@ -85,7 +105,7 @@ function denseMorph(sparse: number[], n: number): Float32Array {
   return out;
 }
 
-export function buildPortrait(rig: PortraitRig, image: ImageData, count: number): PortraitData {
+export function buildPortrait(rig: PortraitRig, image: ImageData, count: number, reliefCols = 180): PortraitData {
   const [, , cw, ch] = rig.crop;
   const [gw, gh] = rig.grid;
   const width = PORTRAIT_HEIGHT * (cw / ch);
@@ -406,6 +426,145 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number)
     setNormal(k, 0, 0, 1);
   }
 
+  // --- Surface en relief : une grille qui épouse le visage et la silhouette ---
+  const cols = reliefCols;
+  const rows = Math.round(reliefCols * (H / W));
+  const vc = (cols + 1) * (rows + 1);
+  const rel = {
+    position: new Float32Array(vc * 3),
+    uv: new Float32Array(vc * 2),
+    normal: new Float32Array(vc * 3),
+    jaw: new Float32Array(vc * 3),
+    shape: new Float32Array(vc * 3),
+    blink: new Float32Array(vc * 3),
+    head: new Float32Array(vc),
+    mask: new Float32Array(vc),
+    mouth: new Float32Array(vc),
+    face: new Float32Array(vc),
+  };
+  const mouthSet = new Set(mouthTris);
+  const depth = new Float32Array(vc);
+  const fixed = new Uint8Array(vc);
+  const subjectAt = (gx: number, gy: number) => {
+    const cx = Math.max(0, Math.min(gw - 1, gx));
+    const cy = Math.max(0, Math.min(gh - 1, gy));
+    return classes[cy * gw + cx]! !== 0 ? 1 : 0;
+  };
+  const morphTargets = [
+    [morph.jaw, rel.jaw],
+    [morph.shape, rel.shape],
+    [morph.blink, rel.blink],
+  ] as const;
+  for (let r = 0; r <= rows; r++) {
+    for (let c = 0; c <= cols; c++) {
+      const i = r * (cols + 1) + c;
+      const u = c / cols;
+      const v = r / rows;
+      rel.uv[i * 2] = u;
+      rel.uv[i * 2 + 1] = v;
+      const x = Math.min(W - 1, u * W);
+      const y = Math.min(H - 1, v * H);
+      const t = owner[Math.floor(y) * W + Math.floor(x)]!;
+      // Masque adouci : moyenne pondérée des régions voisines (5 x 5 cases).
+      const gx = Math.floor((x / W) * gw);
+      const gy = Math.floor((y / H) * gh);
+      let m = 0;
+      let mw = 0;
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const wk = 3 - Math.max(Math.abs(dx), Math.abs(dy));
+          m += subjectAt(gx + dx, gy + dy) * wk;
+          mw += wk;
+        }
+      }
+      rel.mask[i] = m / mw;
+      if (t >= 0) {
+        const ws = barycentric(t, x, y);
+        let d = 0;
+        for (let j = 0; j < 3; j++) {
+          const id = tris[t * 3 + j]!;
+          const w = ws[j]!;
+          d += L[id * 3 + 2]! * w;
+          for (const [source, out] of morphTargets) {
+            out[i * 3] = out[i * 3]! + source[id * 3]! * w * width;
+            out[i * 3 + 1] = out[i * 3 + 1]! - source[id * 3 + 1]! * w * height;
+            out[i * 3 + 2] = out[i * 3 + 2]! + source[id * 3 + 2]! * w * width;
+          }
+        }
+        depth[i] = d;
+        fixed[i] = 1;
+        rel.mask[i] = 1;
+        rel.face[i] = 1;
+        rel.head[i] = 1;
+        if (mouthSet.has(t)) rel.mouth[i] = 1;
+      } else {
+        depth[i] = depthAt(u, v);
+        const region = regionAt(x, y);
+        rel.head[i] =
+          region === HAIR || region === OTHERS || region === FACE_SKIN
+            ? 1
+            : region === BODY_SKIN
+              ? Math.max(0.2, Math.min(1, 1 - (v - rig.pivot[1]) * 6))
+              : region === CLOTHES
+                ? 0.12
+                : 0.5;
+      }
+    }
+  }
+  // Continuité : la surface autour du visage se raccorde au maillage (lissage
+  // laplacien, le visage restant fixe) et le fond suit la silhouette au lieu
+  // de plonger (pas de voile étiré sur les bords).
+  const data0 = depth.slice();
+  for (let it = 0; it < 160; it++) {
+    for (let r = 0; r <= rows; r++) {
+      for (let c = 0; c <= cols; c++) {
+        const i = r * (cols + 1) + c;
+        if (fixed[i]) continue;
+        let sum = 0;
+        let k = 0;
+        if (c > 0) { sum += depth[i - 1]!; k++; }
+        if (c < cols) { sum += depth[i + 1]!; k++; }
+        if (r > 0) { sum += depth[i - cols - 1]!; k++; }
+        if (r < rows) { sum += depth[i + cols + 1]!; k++; }
+        // Rappel faible vers la profondeur estimée : raccord en pente douce.
+        const lambda = rel.mask[i]! > 0.5 ? 0.03 : 0;
+        depth[i] = (sum / k + lambda * data0[i]!) / (1 + lambda);
+      }
+    }
+  }
+  for (let r = 0; r <= rows; r++) {
+    for (let c = 0; c <= cols; c++) {
+      const i = r * (cols + 1) + c;
+      rel.position[i * 3] = toX(c / cols);
+      rel.position[i * 3 + 1] = toY(r / rows);
+      rel.position[i * 3 + 2] = toZ(depth[i]!);
+      // Normale par différences centrées sur la grille (unités du monde).
+      const c0 = Math.max(0, c - 1);
+      const c1 = Math.min(cols, c + 1);
+      const r0 = Math.max(0, r - 1);
+      const r1 = Math.min(rows, r + 1);
+      const dzdx = (depth[r * (cols + 1) + c1]! - depth[r * (cols + 1) + c0]!) / ((c1 - c0) / cols);
+      const dzdy = ((depth[r0 * (cols + 1) + c]! - depth[r1 * (cols + 1) + c]!) * width) / (((r1 - r0) / rows) * height);
+      const len = Math.hypot(dzdx, dzdy, 1);
+      rel.normal[i * 3] = -dzdx / len;
+      rel.normal[i * 3 + 1] = -dzdy / len;
+      rel.normal[i * 3 + 2] = 1 / len;
+    }
+  }
+  // Triangles : deux par case, sauf sur le fond seul.
+  const indices: number[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const a = r * (cols + 1) + c;
+      const b = a + 1;
+      const d = a + cols + 1;
+      const e = d + 1;
+      if (rel.mask[a]! + rel.mask[b]! + rel.mask[d]! + rel.mask[e]! < 0.05) continue;
+      indices.push(a, d, b, b, d, e);
+    }
+  }
+  const relief: Relief = { ...rel, index: new Uint32Array(indices) };
+
   // Maillage filaire : chaque arête une fois.
   const edges = new Set<number>();
   for (let t = 0; t < triCount; t++) {
@@ -448,6 +607,9 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number)
     pivot: [toX(rig.pivot[0]), toY(rig.pivot[1]), toZ(rig.pivot[2])],
     height,
     // Les cheveux ajoutent environ un tiers au-dessus du front.
+    relief,
+    pixels: { width: W, height: H, data: new Uint8Array(px.buffer.slice(0)) },
+    bounds: { top: toY(0), bottom: toY(1) },
     frame: { x: toX(faceU), y: toY((top - (chin - top) * 0.35 + chin) / 2), height: (chin - top) * 1.35 * height },
   };
 }

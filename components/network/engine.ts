@@ -15,6 +15,7 @@ import {
   Group,
   LineBasicMaterial,
   LineSegments,
+  Mesh,
   PerspectiveCamera,
   Points,
   Scene,
@@ -407,7 +408,7 @@ export class NetworkEngine {
     const portrait = this.portrait;
     if (!portrait || !this.composer || !portrait.object.visible || !portrait.object.parent) return;
     this.camera.layers.set(PORTRAIT_LAYER);
-    this.composer.render(this.renderer, this.scene, this.camera, 1.2);
+    this.composer.render(this.renderer, this.scene, this.camera, 1.05);
     this.camera.layers.set(0);
   }
 
@@ -424,12 +425,12 @@ export class NetworkEngine {
       if (this.portrait !== portrait) return warmTarget.dispose();
       if (step < parts.length) {
         // Un seul élément visible, un seul point dessiné.
-        const part = parts[step] as Points | LineSegments;
+        const part = parts[step] as Points | LineSegments | Mesh;
         const range = { ...part.geometry.drawRange };
         parts.forEach((p) => (p.visible = p === part));
         const shown = portrait.object.visible;
         portrait.object.visible = true;
-        part.geometry.setDrawRange(0, part instanceof LineSegments ? 2 : 1);
+        part.geometry.setDrawRange(0, part instanceof Mesh ? 3 : part instanceof LineSegments ? 2 : 1);
         this.camera.add(portrait.object);
         this.camera.layers.set(PORTRAIT_LAYER);
         this.renderer.setRenderTarget(warmTarget);
@@ -596,7 +597,7 @@ export class NetworkEngine {
     this.opacity = damp(this.opacity, Math.max(targetOpacity, focusBoost) * (desktop ? 1 : 0.6), 2.2, dt);
     // Le portrait au premier plan : le réseau s'efface en partie derrière lui.
     const portraitVis = this.updatePortrait(dt, desktop);
-    this.material.uniforms.uOpacity!.value = this.opacity * (1 - 0.62 * portraitVis);
+    this.material.uniforms.uOpacity!.value = this.opacity * (1 - 0.78 * portraitVis);
     this.lineMaterial.opacity = this.opacity * 0.42 * (1 - 0.55 * portraitVis);
 
     // Rotation lente, figée quand la caméra doit viser un nœud précis.
@@ -663,10 +664,17 @@ export class NetworkEngine {
       const ny = 1 - (cy / this.height) * 2;
       object.position.set(nx * half * this.camera.aspect - head.x, ny * half - head.y, -depth);
     };
-    if (framed) fit(rect.left + rect.width / 2, rect.top + rect.height / 2, rect.height * 0.9);
-    // Téléphone, annonce lancée plus bas dans la page : la tête parle
-    // au-dessus du lecteur, en arrière-plan du texte.
-    else if (!desktop && speaking) fit(this.width / 2, this.height * 0.5, this.height * 0.34);
+    if (framed) {
+      fit(rect.left + rect.width / 2, rect.top + rect.height / 2, rect.height * 0.9);
+      // Le buste s'estompe avant le bas du cadre : jamais sur le texte.
+      const ratio = this.renderer.getPixelRatio();
+      this.portrait.setClip((this.height - rect.top - rect.height + 8) * ratio, (this.height - rect.top + 40) * ratio, 56 * ratio);
+    } else {
+      this.portrait.clearClip();
+      // Téléphone, annonce lancée plus bas dans la page : la tête parle
+      // au-dessus du lecteur, en arrière-plan du texte.
+      if (!desktop && speaking) fit(this.width / 2, this.height * 0.5, this.height * 0.34);
+    }
 
     // Regard : la tête se tourne vers le pointeur (ou le doigt, brièvement).
     // Position du portrait à l'écran, en coordonnées normalisées.

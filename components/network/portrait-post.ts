@@ -14,6 +14,7 @@ import {
   LinearFilter,
   Mesh,
   OneFactor,
+  OneMinusSrcAlphaFactor,
   OrthographicCamera,
   PlaneGeometry,
   Scene,
@@ -70,11 +71,12 @@ const COMPOSITE = /* glsl */ `
   uniform float uBloom;
   varying vec2 vUv;
 
-  // Reinhard étendu appliqué à la luminance : la teinte est conservée.
+  // Courbe à épaule appliquée à la luminance : tons moyens intacts (la photo
+  // reste fidèle), hautes lumières compressées, teinte conservée.
   vec3 tone(vec3 c) {
     float L = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    float white = 3.2;
-    float mapped = L * (1.0 + L / (white * white)) / (1.0 + L);
+    float knee = 0.62;
+    float mapped = L < knee ? L : knee + (1.0 - knee) * (1.0 - exp(-(L - knee) / (1.0 - knee)));
     c *= mapped / max(L, 1e-5);
     // Canal hors limites : on glisse vers le blanc plutôt que de tronquer.
     float peak = max(max(c.r, c.g), c.b);
@@ -82,10 +84,12 @@ const COMPOSITE = /* glsl */ `
   }
 
   void main() {
-    vec3 c = texture2D(tBase, vUv).rgb * uExposure + texture2D(tBloom, vUv).rgb * uBloom;
+    vec4 base = texture2D(tBase, vUv);
+    vec3 c = base.rgb * uExposure + texture2D(tBloom, vUv).rgb * uBloom;
     c = tone(c);
-    float a = max(max(c.r, c.g), c.b);
-    gl_FragColor = vec4(c, clamp(a, 0.0, 1.0));
+    // Couverture de la surface : le visage masque le réseau derrière lui ;
+    // halo et particules s'ajoutent à la lumière (alpha nul).
+    gl_FragColor = vec4(c, clamp(base.a, 0.0, 1.0));
   }
 `;
 
@@ -105,7 +109,8 @@ export class PortraitComposer {
   constructor(renderer: WebGLRenderer) {
     this.hdr = renderer.extensions.has("EXT_color_buffer_float") || renderer.extensions.has("EXT_color_buffer_half_float");
     const options = { type: this.hdr ? HalfFloatType : UnsignedByteType, depthBuffer: false, minFilter: LinearFilter, magFilter: LinearFilter };
-    this.base = new WebGLRenderTarget(1, 1, options);
+    // Tampon de profondeur : la surface du visage se masque elle-même quand la tête tourne.
+    this.base = new WebGLRenderTarget(1, 1, { ...options, depthBuffer: true });
     this.small = new WebGLRenderTarget(1, 1, options);
     this.blur = new WebGLRenderTarget(1, 1, options);
 
@@ -132,12 +137,13 @@ export class PortraitComposer {
         uExposure: { value: 1 },
         uBloom: { value: 0.32 },
       },
-      // Ajouté par-dessus le réseau, sans l'effacer.
+      // Composition « par-dessus » en alpha prémultiplié : le visage couvre le
+      // réseau, la lumière pure s'y ajoute.
       blending: CustomBlending,
       blendSrc: OneFactor,
-      blendDst: OneFactor,
+      blendDst: OneMinusSrcAlphaFactor,
       blendSrcAlpha: OneFactor,
-      blendDstAlpha: OneFactor,
+      blendDstAlpha: OneMinusSrcAlphaFactor,
       transparent: true,
       depthTest: false,
       depthWrite: false,
