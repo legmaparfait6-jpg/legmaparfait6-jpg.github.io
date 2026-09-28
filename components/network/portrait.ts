@@ -117,12 +117,12 @@ const VERTEX = /* glsl */ `
     // Profondeur de champ : net sur le visage, flou doux en avant et en arrière.
     float defocus = smoothstep(1.1, 3.4, abs(p.z - uFocus));
     vec4 mv = viewPosition(p);
-    gl_PointSize = uSize * (0.55 + aIntensity * 0.85) * (1.0 + mouth * 0.45) * (1.0 + defocus * 1.8)
+    gl_PointSize = uSize * (0.8 + aIntensity * 0.4) * (1.0 + mouth * 0.45) * (1.0 + defocus * 1.8)
       * uPixelRatio * (190.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
 
     // Ligne de balayage : une bande lumineuse qui descend sur le visage.
-    float scan = (1.0 - smoothstep(0.0, 0.14, abs(position.y - uScanY))) * (0.35 + face);
+    float scan = (1.0 - smoothstep(0.0, 0.07, abs(position.y - uScanY))) * (0.35 + face);
 
     // Couleur : le teint réel de la peau (reflets cuivrés), vert du signal dans l'ombre.
     vec3 signal = vec3(0.24, 0.86, 0.52);
@@ -131,6 +131,9 @@ const VERTEX = /* glsl */ `
     vec3 base = mix(signal * 0.9, photo, smoothstep(0.08, 0.45, aIntensity) * (0.45 + 0.55 * face));
     // Cheveux : sombres, à peine teintés, seuls les contours accrochent la lumière.
     base = mix(base, mix(signal * 0.45, photo * 0.8, 0.55), hair);
+    // Vêtements : teinte de la photo à peine verdie (pas de contour vif).
+    float cloth = aKind == 0.0 && aHead > 0.05 && aHead < 0.2 ? 1.0 : 0.0;
+    base = mix(base, mix(signal * 0.75, photo * 0.9, 0.4), cloth);
 
     // Éclairage : lumière principale qui suit le regard, reflet sur la peau,
     // liseré vert sur les contours (lumière arrière).
@@ -141,7 +144,7 @@ const VERTEX = /* glsl */ `
     // Liseré réservé à la tête : le buste reste dans l'ombre.
     float rim = pow(1.0 - clamp(n.z, 0.0, 1.0), 3.5) * (1.0 - mouth) * aHead;
     vec3 lit = base * (0.38 + 1.05 * wrap) + vec3(1.0, 0.9, 0.78) * spec * 0.55 + signal * rim * 0.3;
-    lit = mix(lit, vec3(0.62, 1.0, 0.78), scan * 0.3);
+    lit = mix(lit, vec3(0.62, 1.0, 0.78), scan * 0.2);
     vColor = mix(lit, signal * 1.1, mouth);
 
     float speaking = 1.0 + uVoice * 0.35 * face;
@@ -149,9 +152,9 @@ const VERTEX = /* glsl */ `
     float twinkle = 0.86 + 0.14 * sin(uTime * 2.6 + seed * 3.1);
     // Une fois la surface formée, les particules ne restent qu'en éclats.
     float body = aKind == 0.0 && aHead < 0.05 ? 1.0 : 0.0;
-    float settled = mix(1.0, mix(mix(0.1, 0.22, hair), 1.0, max(body, mouth * 0.6)), uSettle);
+    // Une fois formé, le buste s'efface loin de la tête (portrait qui émerge de l'ombre).
     vec2 off = (position.xy - uHeadCircle.xy) / uHeadCircle.z;
-    settled *= mix(1.0, 1.0 - smoothstep(0.95, 2.6, length(vec2(off.x * 0.9, off.y < 0.0 ? off.y : off.y * 0.6))), uSettle);
+    float settled = mix(1.0, 1.0 - smoothstep(0.95, 2.6, length(vec2(off.x * 0.9, off.y < 0.0 ? off.y : off.y * 0.6))), uSettle * (1.0 - body));
     vAlpha = settled * uOpacity * visible * speaking * twinkle * (1.0 + scan * 0.4) / (1.0 + defocus * 2.2)
       * mix((0.08 + aIntensity * 1.1) * uDensity * (1.0 - 0.35 * hair), uOpen * 0.35, mouth);
   }
@@ -243,8 +246,10 @@ const RELIEF_FRAGMENT = /* glsl */ `
     vec2 off = (vXY - uHeadCircle.xy) / uHeadCircle.z;
     float headness = 1.0 - smoothstep(0.75, 1.6, length(off));
     // La photo est déjà éclairée : la lumière ne fait que la moduler.
-    float key = mix(0.5 + 0.3 * wrap, 0.78 + 0.36 * wrap, headness);
-    vec3 c = photo * key + vec3(1.0, 0.9, 0.8) * spec * 0.12 + signal * fres * 0.07 * headness;
+    // Fond du visage : volume sombre derrière les points (contraste, et le
+    // réseau ne traverse plus le visage). Ce n'est jamais une photo.
+    float key = mix(0.5 + 0.3 * wrap, 0.78 + 0.36 * wrap, headness) * 0.12;
+    vec3 c = photo * key + signal * fres * 0.05 * headness;
     // Étalonnage : ombres légèrement teintées du vert du signal.
     c += signal * 0.018 * (1.0 - smoothstep(0.0, 0.25, dot(photo, vec3(0.333))));
     // Bouche ouverte : intérieur sombre, lueur de la voix.
@@ -253,7 +258,7 @@ const RELIEF_FRAGMENT = /* glsl */ `
     // Hologramme : trame très fine, balayage discret.
     c *= 0.95 + 0.05 * sin(gl_FragCoord.y * 1.4 + uTime * 2.0);
     c += signal * (1.0 - smoothstep(0.0, 0.05, abs(vY - uScanY))) * 0.1;
-    c += signal * edgeGlow * 0.9;
+    c += signal * edgeGlow * 0.6;
     // Le portrait émerge de l'obscurité : le buste s'efface loin de la tête.
     float emerge = 1.0 - smoothstep(0.95, 2.4, length(vec2(off.x * 0.9, min(off.y, 0.0) * 1.0 + max(off.y, 0.0) * 0.6)));
     // Bords : le masque se dissout en grain, jamais de découpe nette.

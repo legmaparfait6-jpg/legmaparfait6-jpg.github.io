@@ -105,7 +105,12 @@ function denseMorph(sparse: number[], n: number): Float32Array {
   return out;
 }
 
-export function buildPortrait(rig: PortraitRig, image: ImageData, count: number, reliefCols = 180): PortraitData {
+/**
+ * @param spacing écart de la trame du visage, en pixels de la photo (plus
+ *   petit = plus de points)
+ * @param reliefCols finesse de la surface en relief (colonnes)
+ */
+export function buildPortrait(rig: PortraitRig, image: ImageData, spacing: number, reliefCols = 180): PortraitData {
   const [, , cw, ch] = rig.crop;
   const [gw, gh] = rig.grid;
   const width = PORTRAIT_HEIGHT * (cw / ch);
@@ -244,40 +249,39 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number,
     return (at(x, y) * (1 - tx) + at(x + 1, y) * tx) * (1 - ty) + (at(x, y + 1) * (1 - tx) + at(x + 1, y + 1) * tx) * ty;
   };
 
-  // --- Poids de tirage : le visage domine, la silhouette se lit par ses contours ---
-  const weights = new Float32Array(W * H);
-  let total = 0;
+  // --- Tirage en trame régulière (jitter) : couverture uniforme, sans trous
+  // ni amas. La lumière vient de la couleur de chaque point, pas de leur
+  // densité : le visage se lit net, comme sur un écran de points.
+  const samples: number[] = [];
   const margin = 4;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      // Poids cumulés : chaque pixel reçoit le total courant (tableau croissant).
-      if (x < margin || y < margin || x >= W - margin || y >= H - margin) {
-        weights[i] = total;
-        continue;
+  const grid = (step: number, accept: (i: number, region: number) => boolean) => {
+    for (let gy = margin; gy < H - margin; gy += step) {
+      for (let gx = margin; gx < W - margin; gx += step) {
+        const x = Math.min(W - 1.001, Math.max(0, gx + (random() - 0.5) * step * 0.8));
+        const y = Math.min(H - 1.001, Math.max(0, gy + (random() - 0.5) * step * 0.8));
+        const i = Math.floor(y) * W + Math.floor(x);
+        const region = owner[i]! >= 0 ? FACE_SKIN : regionAt(x, y);
+        if (accept(i, region)) samples.push(x, y);
       }
-      const l = lum[i]!;
-      const e = edge[i]!;
-      const r = px[i * 4]!;
-      const b = px[i * 4 + 2]!;
-      const skin = Math.max(0, Math.min(1, (r - b - 4) / 50));
-      let w: number;
-      // Densité guidée par la lumière : les reliefs éclairés se lisent, les ombres respirent.
-      if (owner[i]! >= 0) w = 0.25 + 3.2 * l ** 1.25 * (0.6 + skin) + 1.1 * e ** 1.2;
-      else {
-        const region = regionAt(x, y);
-        if (region === FACE_SKIN || region === BODY_SKIN) w = 0.25 + 3.0 * l ** 1.25 * (0.6 + skin) + 1.1 * e ** 1.2;
-        else if (region === HAIR || region === OTHERS) w = 0.3 + 1.8 * e ** 1.2;
-        else if (region === CLOTHES) w = 0.12 + 3.2 * e ** 1.2;
-        else w = l > 0.14 ? 0.012 + 0.4 * e ** 1.5 : 0;
-      }
-      total += w;
-      weights[i] = total;
     }
+  };
+  // Visage et peau : trame fine.
+  grid(spacing, (_, region) => region === FACE_SKIN || region === BODY_SKIN);
+  // Cheveux : trame plus lâche.
+  grid(spacing * 1.7, (_, region) => region === HAIR || region === OTHERS);
+  // Vêtements : trame lâche, plus dense sur les plis et la silhouette.
+  grid(spacing * 2.2, (i, region) => region === CLOTHES && random() < 0.3 + edge[i]! * 2);
+  // Brume du fond : quelques points épars.
+  for (let n = 0; n < 900; n++) {
+    const x = margin + random() * (W - 2 * margin);
+    const y = margin + random() * (H - 2 * margin);
+    const i = Math.floor(y) * W + Math.floor(x);
+    if (owner[i]! < 0 && regionAt(x, y) === 0 && lum[i]! > 0.14) samples.push(x, y);
   }
 
-  const mouthCount = Math.round(count * 0.012);
-  const bodyCount = count - mouthCount;
+  const bodyCount = samples.length / 2;
+  const mouthCount = Math.round(bodyCount * 0.012);
+  const count = bodyCount + mouthCount;
   const position = new Float32Array(count * 3);
   const color = new Float32Array(count * 3);
   const intensity = new Float32Array(count);
@@ -347,18 +351,9 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number,
   };
 
   for (let k = 0; k < bodyCount; k++) {
-    // Tirage pondéré (recherche dichotomique dans les poids cumulés).
-    const target = random() * total;
-    let lo = 0;
-    let hi = weights.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (weights[mid]! < target) lo = mid + 1;
-      else hi = mid;
-    }
-    const x = (lo % W) + random();
-    const y = Math.floor(lo / W) + random();
-    const i = lo;
+    const x = samples[k * 2]!;
+    const y = samples[k * 2 + 1]!;
+    const i = Math.floor(y) * W + Math.floor(x);
     const l = lum[i]!;
     const e = edge[i]!;
     const t = owner[i]!;
@@ -369,7 +364,7 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number,
     if (t >= 0) {
       const [w0, w1, w2] = barycentric(t, x, y);
       bind(k, t, w0, w1, w2);
-      intensity[k] = Math.min(1, 0.12 + 1.35 * l + 0.08 * e);
+      intensity[k] = Math.min(1, 0.08 + 1.4 * l);
       head[k] = 1;
       kind[k] = 1;
       continue;
@@ -380,18 +375,18 @@ export function buildPortrait(rig: PortraitRig, image: ImageData, count: number,
     let d = depthAt(u, v);
     if (region === HAIR || region === OTHERS) {
       d += (random() - 0.3) * 0.03; // volume des cheveux
-      intensity[k] = 0.05 + 0.28 * e + 0.2 * l;
+      intensity[k] = 0.1 + 0.45 * e + 0.3 * l;
       head[k] = 1;
       kind[k] = 3;
     } else if (region === FACE_SKIN || region === BODY_SKIN) {
       d += (random() - 0.5) * 0.006;
-      intensity[k] = Math.min(1, 0.12 + 1.3 * l + 0.08 * e);
+      intensity[k] = Math.min(1, 0.08 + 1.4 * l);
       kind[k] = 4; // même rendu que le visage : pas de bord de masque
       // Le cou suit la tête près du menton, le buste presque pas.
       head[k] = region === FACE_SKIN ? 1 : Math.max(0.2, Math.min(1, 1 - (v - rig.pivot[1]) * 6));
     } else if (region === CLOTHES) {
       d += (random() - 0.5) * 0.01;
-      intensity[k] = 0.2 + 0.7 * e + 0.3 * l;
+      intensity[k] = 0.1 + 0.8 * e + 0.3 * l;
       head[k] = 0.12;
     } else {
       d += (random() - 0.5) * 0.12; // brume : une épaisseur, pas un plan
