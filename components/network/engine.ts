@@ -25,7 +25,8 @@ import {
 } from "three";
 import type { GraphData, GraphNode } from "@/content/graph";
 import { type IncidentPhase, runtime } from "@/lib/bus";
-import { PortraitCloud } from "./portrait";
+import { PORTRAIT_LAYER, PortraitCloud } from "./portrait";
+import { PortraitComposer } from "./portrait-post";
 import type { PortraitData } from "./portrait-build";
 
 export type Formation = "galaxy" | "layers" | "clusters" | "live" | "finale" | "mission";
@@ -137,7 +138,11 @@ export class NetworkEngine {
   private diveBoost = 0;
   private rotation = 0;
   private portrait: PortraitCloud | null = null;
+  private composer: PortraitComposer | null = null;
+  /** Rendu logiciel (sans carte graphique) : pas de post-traitement plein écran. */
+  private readonly software: boolean;
   private gaze = new Vector2();
+  private tmp2d = new Vector2();
   private touchLook = { x: 0, y: 0, until: 0 };
   private anchor: HTMLElement | null = null;
   /** Position du cadre dans le document (mesurée hors de la boucle d'animation). */
@@ -172,6 +177,10 @@ export class NetworkEngine {
 
     this.renderer = new WebGLRenderer({ canvas, antialias: !options.mobile, alpha: true, powerPreference: "high-performance" });
     this.renderer.setClearColor(0x000000, 0);
+    const gl = this.renderer.getContext();
+    const debug = gl.getExtension("WEBGL_debug_renderer_info");
+    const gpu = debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : "";
+    this.software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpu);
     this.scene.add(this.group);
 
     // --- positions des formations -----------------------------------------
@@ -377,7 +386,7 @@ export class NetworkEngine {
       const dt = Math.min((now - this.lastTime) / 1000, 0.05);
       this.lastTime = now;
       this.update(dt);
-      this.renderer.render(this.scene, this.camera);
+      this.render();
       this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
@@ -388,9 +397,27 @@ export class NetworkEngine {
     cancelAnimationFrame(this.raf);
   }
 
+  /** Réseau sur la couche 0 ; visage à part, en HDR, composé par-dessus. */
+  private render() {
+    this.camera.layers.set(0);
+    // Sans post-traitement, le visage est dessiné avec le réseau.
+    if (!this.composer) this.camera.layers.enable(PORTRAIT_LAYER);
+    this.renderer.render(this.scene, this.camera);
+    const portrait = this.portrait;
+    if (!portrait || !this.composer || !portrait.object.visible || !portrait.object.parent) return;
+    this.camera.layers.set(PORTRAIT_LAYER);
+    this.composer.render(this.renderer, this.scene, this.camera, 1.2);
+    this.camera.layers.set(0);
+  }
+
   /** Visage en particules (construit par portrait-build.ts). */
   setPortrait(data: PortraitData) {
     this.portrait?.dispose();
+    if (!this.composer && !this.software) {
+      this.composer = new PortraitComposer(this.renderer);
+      this.resizeComposer();
+    }
+    const composerReady = this.composer?.compile(this.renderer);
     const portrait = new PortraitCloud(data, { ratio: this.renderer.getPixelRatio(), size: this.options.mobile ? 0.2 : 0.16 });
     // Attaché à la caméra : toujours de face, en arrière-plan, quelle que soit
     // la formation du réseau.
@@ -402,7 +429,11 @@ export class NetworkEngine {
       this.camera.add(portrait.object);
     };
     this.portrait = portrait;
-    this.renderer.compileAsync(portrait.object, this.camera, this.scene).then(attach, attach);
+    // La compilation ne retient que les couches visibles par la caméra.
+    this.camera.layers.enable(PORTRAIT_LAYER);
+    const portraitReady = this.renderer.compileAsync(portrait.object, this.camera, this.scene).catch(() => undefined);
+    void Promise.all([portraitReady, composerReady]).then(attach);
+    this.camera.layers.set(0);
   }
 
   setState(state: StageState) {
@@ -490,12 +521,20 @@ export class NetworkEngine {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.measureAnchor();
+    this.resizeComposer();
+  }
+
+  private resizeComposer() {
+    if (!this.composer) return;
+    const size = this.renderer.getDrawingBufferSize(this.tmp2d);
+    this.composer.setSize(size.x, size.y);
   }
 
   dispose() {
     this.stop();
     this.anchorObserver?.disconnect();
     this.portrait?.dispose();
+    this.composer?.dispose();
     this.nodeGeometry.dispose();
     this.lineGeometry.dispose();
     this.packetGeometry.dispose();

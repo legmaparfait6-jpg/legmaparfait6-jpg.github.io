@@ -35,16 +35,19 @@ const COMMON = /* glsl */ `
   uniform vec3 uPivot;
   uniform float uTime;
 
-  vec3 rig(vec3 base, float headWeight) {
-    vec3 p = base + aJaw * uOpen + aShape * uShape + aBlink * uBlink;
-    vec3 q = p - uPivot;
+  /** Rotation de la tête (lacet puis tangage), pondérée par région. */
+  vec3 turn(vec3 q, float headWeight) {
     float yaw = uHeadRot.x * headWeight;
     float pitch = uHeadRot.y * headWeight;
     float cy = cos(yaw), sy = sin(yaw);
     q = vec3(cy * q.x + sy * q.z, q.y, -sy * q.x + cy * q.z);
     float cp = cos(pitch), sp = sin(pitch);
-    q = vec3(q.x, cp * q.y - sp * q.z, sp * q.y + cp * q.z);
-    return uPivot + q;
+    return vec3(q.x, cp * q.y - sp * q.z, sp * q.y + cp * q.z);
+  }
+
+  vec3 rig(vec3 base, float headWeight) {
+    vec3 p = base + aJaw * uOpen + aShape * uShape + aBlink * uBlink;
+    return uPivot + turn(p - uPivot, headWeight);
   }
 `;
 
@@ -56,6 +59,7 @@ const VERTEX = /* glsl */ `
   attribute float aIntensity;
   attribute float aHead;
   attribute float aKind;
+  attribute vec3 aNormal;
   uniform float uProgress;
   uniform float uScatter;
   uniform float uScanY;
@@ -64,6 +68,8 @@ const VERTEX = /* glsl */ `
   uniform float uSize;
   uniform float uVoice;
   uniform float uDensity;
+  uniform vec3 uLight;
+  uniform float uFocus;
   varying float vAlpha;
   varying vec3 vColor;
 
@@ -77,31 +83,51 @@ const VERTEX = /* glsl */ `
     vec3 target = rig(position, aHead);
     // Respiration : la silhouette se soulève à peine.
     target.y += sin(uTime * 1.3) * 0.02 * (1.0 - aHead * 0.5);
+    // Matière vivante : chaque particule frémit, imperceptiblement.
+    float seed = aDelay * 97.0;
+    target += vec3(sin(uTime * 2.1 + seed), cos(uTime * 1.7 + seed * 1.3), sin(uTime * 1.3 + seed * 0.7)) * 0.006;
     vec3 p = mix(aStart, target, e);
     p = mix(p, aStart * 1.25, uScatter);
 
-    vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    float face = aKind == 1.0 ? 1.0 : 0.0;
+    float face = (aKind == 1.0 || aKind == 4.0) ? 1.0 : 0.0;
     float mouth = aKind == 2.0 ? 1.0 : 0.0;
-    gl_PointSize = uSize * (0.55 + aIntensity * 0.85) * (1.0 + mouth * 0.8) * uPixelRatio * (190.0 / -mv.z);
+    float hair = aKind == 3.0 ? 1.0 : 0.0;
+
+    // Profondeur de champ : net sur le visage, flou doux en avant et en arrière.
+    float defocus = smoothstep(1.1, 3.4, abs(p.z - uFocus));
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    gl_PointSize = uSize * (0.55 + aIntensity * 0.85) * (1.0 + mouth * 0.45) * (1.0 + defocus * 1.8)
+      * uPixelRatio * (190.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
 
     // Ligne de balayage : une bande lumineuse qui descend sur le visage.
     float scan = (1.0 - smoothstep(0.0, 0.14, abs(position.y - uScanY))) * (0.35 + face);
 
-    // Couleur : teinte de la photo dans la lumière, vert du signal dans l'ombre.
+    // Couleur : le teint réel de la peau (reflets cuivrés), vert du signal dans l'ombre.
     vec3 signal = vec3(0.24, 0.86, 0.52);
-    // Teint fidèle : la couleur réelle de la peau, éclaircie (reflets cuivrés).
     float lum = max(dot(aColor, vec3(0.2126, 0.7152, 0.0722)), 0.03);
     vec3 photo = min(aColor / lum * 0.62, vec3(1.0));
     vec3 base = mix(signal * 0.9, photo, smoothstep(0.08, 0.45, aIntensity) * (0.45 + 0.55 * face));
-    base = mix(base, vec3(0.62, 1.0, 0.78), scan * 0.75);
-    vColor = mix(base, signal * 1.15, mouth);
+    // Cheveux : sombres, à peine teintés, seuls les contours accrochent la lumière.
+    base = mix(base, mix(signal * 0.45, photo * 0.8, 0.55), hair);
+
+    // Éclairage : lumière principale qui suit le regard, reflet sur la peau,
+    // liseré vert sur les contours (lumière arrière).
+    vec3 n = normalize(turn(aNormal, aHead));
+    float wrap = max((dot(n, uLight) + 0.35) / 1.35, 0.0);
+    vec3 halfway = normalize(uLight + vec3(0.0, 0.0, 1.0));
+    float spec = pow(max(dot(n, halfway), 0.0), 26.0) * face * smoothstep(0.15, 0.6, aIntensity);
+    // Liseré réservé à la tête : le buste reste dans l'ombre.
+    float rim = pow(1.0 - clamp(n.z, 0.0, 1.0), 3.5) * (1.0 - mouth) * aHead;
+    vec3 lit = base * (0.38 + 1.05 * wrap) + vec3(1.0, 0.9, 0.78) * spec * 0.55 + signal * rim * 0.3;
+    lit = mix(lit, vec3(0.62, 1.0, 0.78), scan * 0.75);
+    vColor = mix(lit, signal * 1.4, mouth);
 
     float speaking = 1.0 + uVoice * 0.35 * face;
     float visible = (0.25 + 0.75 * e) * (1.0 - uScatter);
-    vAlpha = uOpacity * visible * speaking * (1.0 + scan * 1.2)
-      * mix((0.08 + aIntensity * 1.1) * uDensity, uOpen * 0.6, mouth);
+    float twinkle = 0.86 + 0.14 * sin(uTime * 2.6 + seed * 3.1);
+    vAlpha = uOpacity * visible * speaking * twinkle * (1.0 + scan * 1.2) / (1.0 + defocus * 2.2)
+      * mix((0.08 + aIntensity * 1.1) * uDensity * (1.0 - 0.35 * hair), uOpen * 0.55, mouth);
   }
 `;
 
@@ -139,6 +165,9 @@ const WIRE_FRAGMENT = /* glsl */ `
   }
 `;
 
+/** Couche de rendu du visage (la scène du réseau reste sur la couche 0). */
+export const PORTRAIT_LAYER = 1;
+
 const damp = (a: number, b: number, lambda: number, dt: number) => a + (b - a) * (1 - Math.exp(-lambda * dt));
 
 export class PortraitCloud {
@@ -154,6 +183,8 @@ export class PortraitCloud {
   private readonly top: number;
   private readonly bottom: number;
   private turn = new Vector2();
+  private light = new Vector3(0.4, 0.3, 1).normalize();
+  private lightTarget = new Vector3();
   private open = 0;
   private openSlow = 0;
   private shape = 0;
@@ -204,6 +235,7 @@ export class PortraitCloud {
     g.setAttribute("aBlink", new BufferAttribute(data.blink, 3));
     g.setAttribute("aHead", new BufferAttribute(data.head, 1));
     g.setAttribute("aKind", new BufferAttribute(data.kind, 1));
+    g.setAttribute("aNormal", new BufferAttribute(data.normal, 3));
 
     const w = this.wireGeometry;
     w.setAttribute("position", new BufferAttribute(data.wire.position, 3));
@@ -233,6 +265,8 @@ export class PortraitCloud {
         uVoice: { value: 0 },
         // Plus de particules, chacune plus discrète : même luminosité d'ensemble.
         uDensity: { value: Math.min(1.2, (16000 / count) ** 0.8) },
+        uLight: { value: new Vector3(0.4, 0.3, 1).normalize() },
+        uFocus: { value: data.focus },
       },
       transparent: true,
       depthWrite: false,
@@ -251,6 +285,9 @@ export class PortraitCloud {
     points.frustumCulled = false;
     const wire = new LineSegments(this.wireGeometry, this.wireMaterial);
     wire.frustumCulled = false;
+    // Couche dédiée : le visage est rendu à part, en HDR (portrait-post.ts).
+    points.layers.set(PORTRAIT_LAYER);
+    wire.layers.set(PORTRAIT_LAYER);
     this.object.add(points, wire);
   }
 
@@ -296,6 +333,12 @@ export class PortraitCloud {
     const targetPitch = (gaze ? gaze.y * 0.16 : idlePitch) + nod;
     this.turn.set(damp(this.turn.x, targetYaw, 3.2, dt), damp(this.turn.y, targetPitch, 3.2, dt));
 
+    // Lumière principale : suit le regard ; au repos, tourne lentement autour du visage.
+    if (gaze) this.lightTarget.set(gaze.x * 1.3, -gaze.y * 0.9 + 0.25, 1);
+    else this.lightTarget.set(Math.sin(time * 0.35) * 0.9, 0.35 + Math.sin(time * 0.23) * 0.25, 1);
+    this.lightTarget.normalize();
+    this.light.lerp(this.lightTarget, 1 - Math.exp(-2.5 * dt)).normalize();
+
     // Balayage toutes les 7 secondes, du haut vers le bas du visage (1,6 s).
     this.scanClock = (this.scanClock + dt) % 7;
     const scan = this.scanClock < 1.6 ? this.top + (this.bottom - this.top) * (this.scanClock / 1.6) : 99;
@@ -311,6 +354,7 @@ export class PortraitCloud {
     u.uTime!.value = time;
     u.uScanY!.value = scan;
     u.uOpacity!.value = opacity;
+    (u.uLight!.value as Vector3).copy(this.light);
     // Le filaire apparaît une fois le visage formé.
     const formed = Math.max(0, Math.min(1, (this.progress - 1) / 0.5)) * (1 - this.scatter);
     this.wireMaterial.uniforms.uWire!.value = formed * opacity;

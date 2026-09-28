@@ -17,7 +17,7 @@ self.onmessage = async (event: MessageEvent<{ count: number }>) => {
     context.drawImage(bitmap, x, y, w, h, 0, 0, w, h);
     bitmap.close();
     const data = buildPortrait(rig, context.getImageData(0, 0, w, h), event.data.count);
-    const transfer = [data.position, data.color, data.intensity, data.jaw, data.shape, data.blink, data.head, data.kind,
+    const transfer = [data.position, data.color, data.intensity, data.jaw, data.shape, data.blink, data.head, data.kind, data.normal,
       data.wire.position, data.wire.jaw, data.wire.shape, data.wire.blink].map((a) => a.buffer);
     self.postMessage(data, { transfer });
   } catch {
