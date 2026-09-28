@@ -47,7 +47,8 @@ export function Analytics({ code }: { code: string }) {
     <Script
       src="https://gc.zgo.at/count.js"
       data-goatcounter={`https://${code}.goatcounter.com/count`}
-      strategy="afterInteractive"
+      // Chargé une fois la page au repos : jamais en concurrence avec l'affichage.
+      strategy="lazyOnload"
     />
   );
 }

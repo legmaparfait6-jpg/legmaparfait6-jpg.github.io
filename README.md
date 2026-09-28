@@ -24,13 +24,9 @@ Next.js 16 (export statique) · React 19 · TypeScript · CSS natif · three.js 
 
 ## Qualité
 
-Mesures Lighthouse (page d'accueil) :
+Mesures Lighthouse (page d'accueil, site en ligne) : **accessibilité 100**, **bonnes pratiques 100**, **SEO 100** sur ordinateur et sur mobile.
 
-| | Performance | Accessibilité | Bonnes pratiques | SEO |
-|---|---|---|---|---|
-| Desktop | 99 | 100 | — | 100 |
-| Mobile (4G lente simulée) | 72 | 100 | — | 100 |
-
+- Le visage 3D tourne à 60 images par seconde sur une carte graphique intégrée (ordinateur et téléphone) : rendu HDR, shaders compilés en parallèle puis préchauffés image par image.
 - La 3D ne se charge qu'après l'affichage du contenu et se désactive si l'utilisateur demande moins d'animations, en économie de données ou sans WebGL 2.
 - Navigation complète au clavier, focus visible, `prefers-reduced-motion` respecté.
 

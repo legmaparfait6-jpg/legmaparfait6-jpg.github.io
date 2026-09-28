@@ -22,6 +22,7 @@ import {
   Vector2,
   Vector3,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
 import type { GraphData, GraphNode } from "@/content/graph";
 import { type IncidentPhase, runtime } from "@/lib/bus";
@@ -410,6 +411,48 @@ export class NetworkEngine {
     this.camera.layers.set(0);
   }
 
+  /**
+   * Préchauffage du visage, une étape par image (particules, filaire, puis
+   * passes du post-traitement) : aucune image n'est bloquée à son apparition.
+   */
+  private warmPortrait(portrait: PortraitCloud) {
+    const warmTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false });
+    const parts = [...portrait.object.children];
+    const steps = parts.length + (this.composer?.warmSteps ?? 0);
+    let step = 0;
+    const next = () => {
+      if (this.portrait !== portrait) return warmTarget.dispose();
+      if (step < parts.length) {
+        // Un seul élément visible, un seul point dessiné.
+        const part = parts[step] as Points | LineSegments;
+        const range = { ...part.geometry.drawRange };
+        parts.forEach((p) => (p.visible = p === part));
+        const shown = portrait.object.visible;
+        portrait.object.visible = true;
+        part.geometry.setDrawRange(0, part instanceof LineSegments ? 2 : 1);
+        this.camera.add(portrait.object);
+        this.camera.layers.set(PORTRAIT_LAYER);
+        this.renderer.setRenderTarget(warmTarget);
+        this.renderer.render(this.scene, this.camera);
+        this.renderer.setRenderTarget(null);
+        this.camera.layers.set(0);
+        this.camera.remove(portrait.object);
+        part.geometry.setDrawRange(range.start, range.count);
+        parts.forEach((p) => (p.visible = true));
+        portrait.object.visible = shown;
+      } else if (step < steps) {
+        this.composer?.warm(this.renderer, step - parts.length);
+      }
+      step++;
+      if (step < steps) requestAnimationFrame(next);
+      else {
+        warmTarget.dispose();
+        this.camera.add(portrait.object);
+      }
+    };
+    requestAnimationFrame(next);
+  }
+
   /** Visage en particules (construit par portrait-build.ts). */
   setPortrait(data: PortraitData) {
     this.portrait?.dispose();
@@ -424,16 +467,12 @@ export class NetworkEngine {
     if (!this.camera.parent) this.scene.add(this.camera);
     // Shaders compilés en parallèle par le GPU quand c'est possible : aucune
     // image bloquée à l'apparition du visage.
-    const attach = () => {
-      if (this.portrait !== portrait) return;
-      this.camera.add(portrait.object);
-    };
     this.portrait = portrait;
     // La compilation ne retient que les couches visibles par la caméra.
     this.camera.layers.enable(PORTRAIT_LAYER);
     const portraitReady = this.renderer.compileAsync(portrait.object, this.camera, this.scene).catch(() => undefined);
-    void Promise.all([portraitReady, composerReady]).then(attach);
     this.camera.layers.set(0);
+    void Promise.all([portraitReady, composerReady]).then(() => this.warmPortrait(portrait));
   }
 
   setState(state: StageState) {

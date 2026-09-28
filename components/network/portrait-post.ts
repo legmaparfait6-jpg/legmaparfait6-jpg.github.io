@@ -161,6 +161,28 @@ export class PortraitComposer {
     return renderer.compileAsync(scene, this.camera).catch(() => undefined);
   }
 
+  /**
+   * Préchauffage : chaque passe est dessinée une fois dans une cible de 1 x 1,
+   * une par image. Certains pilotes finalisent les shaders au premier dessin :
+   * le coût est ainsi réparti au lieu de bloquer une image entière.
+   */
+  get warmSteps(): number {
+    return 3;
+  }
+
+  warm(renderer: WebGLRenderer, step: number) {
+    const target = (this.warmTarget ??= new WebGLRenderTarget(1, 1, { type: this.base.texture.type, depthBuffer: false }));
+    const material = [this.downsample, this.blurMaterial, this.composite][step];
+    if (!material) return;
+    const autoClear = renderer.autoClear;
+    renderer.autoClear = false;
+    this.pass(renderer, material, target);
+    renderer.setRenderTarget(null);
+    renderer.autoClear = autoClear;
+  }
+
+  private warmTarget: WebGLRenderTarget | null = null;
+
   setSize(width: number, height: number) {
     this.base.setSize(width, height);
     const w = Math.max(1, Math.round(width / 4));
@@ -204,6 +226,7 @@ export class PortraitComposer {
   }
 
   dispose() {
+    this.warmTarget?.dispose();
     this.base.dispose();
     this.small.dispose();
     this.blur.dispose();
