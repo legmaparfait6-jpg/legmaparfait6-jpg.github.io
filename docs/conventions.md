@@ -45,3 +45,9 @@ Règles de développement du portfolio de Legma Parfait.
 1. `npx tsc --noEmit`
 2. `npm run build`
 3. Si le contenu du CV a changé : `npm run cv:pdf`, puis nouveau `npm run build`.
+
+## Film d'entrée
+
+- `/` mène au film `public/film/` (page statique, three.js local, français et anglais avec `?lang=`). `/fr/` et `/en/` restent le site complet, avec un lien « Voir le film ».
+- Le film reste un fichier assemblé : `public/film/app.js` et `index.html`. `scripts/film/` garde la fabrication du visage et de la bande-son.
+- Chaque chiffre et chaque écran du film vient d'un projet réel. Seules les phrases sur « l'intelligence » sont de la fiction, et le film l'annonce.

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legma Parfait, développeur full-stack</title>
+<meta name="description" content="Un film en étoiles, construit à partir des vrais projets de Legma Parfait, développeur full-stack à Ouagadougou.">
+<meta property="og:title" content="Legma Parfait, développeur full-stack"><meta property="og:description" content="Avant le CV, une histoire. Moins de deux minutes."><meta property="og:image" content="https://legmaparfait6-jpg.github.io/og.png"><meta property="og:type" content="website">
+<link rel="canonical" href="https://legmaparfait6-jpg.github.io/fr/"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="importmap">{"imports":{"three":"./lib/three.module.js","three/addons/":"./lib/"}}</script>
+<style>
+:root{--texte:#eef2ff;--texte2:#aab4d8;--cyan:#6fe6ff;--ligne:rgb(150 170 255 / .22)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#02030a;color:var(--texte);font-family:Geist,system-ui,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.sr:focus{position:fixed;left:12px;top:90px;width:auto;height:auto;clip-path:none;z-index:9;background:#0b1030;color:#fff;padding:8px 12px;border-radius:8px}
+.identite{position:fixed;left:clamp(16px,3vw,40px);top:clamp(14px,3vh,32px);pointer-events:none;transition:opacity 1.2s}
+.identite h1{margin:0;font-size:clamp(20px,2.4vw,30px);font-weight:600;letter-spacing:-.03em}
+.identite p{margin:4px 0 0;font-family:"Geist Mono",monospace;font-size:clamp(11px,1vw,13px);letter-spacing:.14em;color:var(--cyan);text-transform:uppercase}
+.recit{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);width:min(92vw,680px);text-align:center;font-size:clamp(15px,1.5vw,19px);opacity:0;color:transparent;text-shadow:none!important;transition:opacity .7s;pointer-events:none;text-shadow:0 1px 14px #000,0 0 4px #000}
+.recit.vu{opacity:.96}
+.nav{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:4px;padding:5px;border:1px solid var(--ligne);border-radius:999px;background:rgb(8 11 28 / .72);backdrop-filter:blur(10px);transition:opacity 1.2s}
+.nav button,.son,.passer{all:unset;cursor:pointer;font-size:clamp(13px,1.1vw,14px);color:var(--texte2);transition:color .2s,background .2s}
+.nav button{padding:9px clamp(11px,1.5vw,18px);border-radius:999px}
+.nav button:hover,.son:hover,.passer:hover{color:var(--texte)}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.nav button[aria-pressed=true]{background:rgb(111 230 255 / .14);color:var(--texte)}
+.son{position:fixed;right:clamp(16px,3vw,40px);top:clamp(16px,3vh,32px);padding:8px 14px;border:1px solid var(--ligne);border-radius:999px;background:rgb(8 11 28 / .6);transition:opacity 1.2s,color .2s}
+.passer{position:fixed;right:clamp(16px,3vw,40px);bottom:26px;padding:8px 14px;border:1px solid var(--ligne);border-radius:999px;background:rgb(8 11 28 / .6);transition:opacity .6s}
+.cache{opacity:0!important;pointer-events:none}
+.fiche{position:fixed;right:clamp(12px,3.5vw,56px);top:50%;width:min(92vw,390px);max-height:84vh;overflow:auto;transform:translateY(-50%) translateX(30px);opacity:0;pointer-events:none;transition:opacity .6s,transform .6s cubic-bezier(.2,.8,.2,1);padding:24px;border:1px solid var(--ligne);border-radius:20px;background:rgb(6 9 26 / .86);backdrop-filter:blur(14px)}
+.fiche.vue{opacity:1;transform:translateY(-50%);pointer-events:auto}
+.fiche .code{font-family:"Geist Mono",monospace;font-size:12px;letter-spacing:.12em;color:var(--texte2)}
+.fiche h2{margin:8px 0 8px;font-size:30px;font-weight:600;letter-spacing:-.03em}
+.statut{display:inline-block;font-family:"Geist Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid currentColor}
+.fiche p{margin:14px 0 0;color:var(--texte2);line-height:1.55;font-size:15px}
+.fiche h3{margin:16px 0 0;font-family:"Geist Mono",monospace;font-weight:500;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.tags li{font-size:12.5px;padding:4px 8px;border:1px solid var(--ligne);border-radius:6px;color:var(--texte2)}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{all:unset;cursor:pointer;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:500;background:var(--texte);color:#07091a;text-align:center}
+.btn.sec{background:transparent;color:var(--texte);border:1px solid var(--ligne)}
+.portail{position:fixed;left:auto;right:clamp(16px,6vw,96px);top:50%;transform:translateY(-50%) scale(.92);opacity:0;pointer-events:none;transition:opacity .7s,transform .7s;text-align:center;width:min(90vw,340px);padding:20px;border:1px solid var(--ligne);border-radius:20px;background:rgb(4 6 18 / .82);backdrop-filter:blur(10px)}
+.portail.vu{opacity:1;transform:translateY(-50%);pointer-events:auto;transition-delay:1.1s}
+.portail h2{margin:0 0 12px;font-size:22px;font-weight:600;text-shadow:0 0 16px #000}
+.portail a{display:block;margin-top:8px;text-decoration:none}
+.barre{position:fixed;left:0;right:0;height:10.5vh;background:#000;transition:transform .55s cubic-bezier(.7,0,.2,1);pointer-events:none;z-index:4}
+.barre.haut{top:0;transform:translateY(-100%)}.barre.bas{bottom:0;transform:translateY(100%)}
+.cinema .barre{transform:none}
+.cinema .nav,.cinema .son{opacity:0;pointer-events:none}
+.seuil{position:fixed;inset:0;z-index:9;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;transition:opacity 1.4s}
+.seuil.parti{opacity:0;pointer-events:none}
+.seuil .s1{margin:0;font-size:clamp(26px,4vw,44px);font-weight:600;letter-spacing:-.03em}
+.seuil .s2{margin:0 0 18px;color:var(--texte2);font-size:clamp(14px,1.4vw,17px)}
+.etiq{position:fixed;left:0;top:0;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .35s;text-shadow:0 0 8px #000,0 0 3px #000;font-size:12.5px;will-change:transform}
+.etiq.titre{font-family:"Geist Mono",monospace;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.etiq.station b{display:block;font-family:"Geist Mono",monospace;font-weight:500;color:var(--cyan);font-size:12px}
+.etiq.station{text-align:center;font-size:14px}
+.ecran{position:fixed;left:0;top:0;width:auto;opacity:0;border-radius:18px;border:1px solid rgb(180 220 255 / .55);box-shadow:0 0 36px rgb(111 230 255 / .3);pointer-events:none;will-change:transform}
+.nom{position:fixed;left:0;top:0;pointer-events:none;font-size:13px;font-weight:500;padding:5px 10px;border-radius:999px;background:rgb(8 11 28 / .86);border:1px solid var(--ligne);opacity:0;transition:opacity .15s;white-space:nowrap}
+.nom small{font-family:"Geist Mono",monospace;font-size:11px;color:var(--texte2);margin-left:6px}
+@media (max-width:760px){
+  .portail{left:50%;right:auto;top:auto;bottom:74px;transform:translateX(-50%) scale(.92)}
+  .portail.vu{transform:translateX(-50%)}
+  .fiche{top:auto;bottom:74px;right:50%;width:min(94vw,420px);max-height:50vh;padding:16px;transform:translate(50%,30px)}
+  .fiche.vue{transform:translate(50%,0)}
+  .fiche h2{font-size:24px}
+  .recit{bottom:72px}
+  .passer{bottom:72px}
+  .etiq{font-size:11px}
+  .nav button{padding:8px 9px;font-size:12.5px}
+}
+
+.chargement{position:fixed;inset:0;z-index:12;background:#000;display:flex;align-items:center;justify-content:center;font-family:"Geist Mono",monospace;font-size:13px;letter-spacing:.2em;color:#6f7aa0;text-transform:uppercase;transition:opacity .5s}
+.chargement.parti{opacity:0;pointer-events:none}
+.carton{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:6px;pointer-events:none}
+.carton .c1{margin:0;font-size:clamp(30px,4.6vw,58px);font-weight:400;letter-spacing:.02em}
+.carton .c2{margin:0 0 30px;font-family:"Geist Mono",monospace;font-size:clamp(11px,1vw,13px);letter-spacing:.34em;text-transform:uppercase;color:var(--texte2)}
+.carton .c3{margin:0;font-size:clamp(15px,1.5vw,19px);color:var(--texte)}
+.carton .c4{margin:6px 0 34px;font-size:clamp(15px,1.5vw,19px);color:#ffd9a0}
+.carton .c5{margin:0;font-size:12px;color:#6f7aa0}
+.journal{position:fixed;left:clamp(16px,5vw,76px);bottom:calc(10.5vh + 18px);z-index:6;font-family:"Geist Mono",monospace;font-size:clamp(11px,1.02vw,14px);line-height:1.75;color:#bcd6ee;pointer-events:none;max-width:min(88vw,720px);text-shadow:0 0 10px #000,0 0 3px #000}
+.journal .rouge{color:#ff6a5c;font-weight:500}
+.journal .vif{color:#ffd9a0;font-size:1.25em}
+.legende{position:fixed;left:50%;top:calc(10.5vh + clamp(18px,5vh,54px));transform:translateX(-50%);z-index:6;width:min(92vw,1000px);margin:0;text-align:center;font-size:clamp(17px,2.05vw,29px);font-weight:300;letter-spacing:.015em;opacity:0;pointer-events:none;text-shadow:0 0 18px #000,0 0 6px #000}
+.legende.grand{font-size:clamp(21px,3vw,42px)}
+.tag{position:fixed;right:clamp(16px,5vw,76px);bottom:calc(10.5vh + 18px);z-index:6;margin:0;max-width:44vw;text-align:right;font-family:"Geist Mono",monospace;font-size:clamp(10px,.86vw,12px);letter-spacing:.1em;text-transform:uppercase;color:#8ea2cc;opacity:0;pointer-events:none;text-shadow:0 0 8px #000}
+.pointVie{position:fixed;left:50%;top:50%;width:13px;height:13px;margin:-6.5px;border-radius:50%;background:#ffc46b;box-shadow:0 0 22px 7px rgb(255 180 90 / .75),0 0 70px 24px rgb(255 160 70 / .3);z-index:5;opacity:0;pointer-events:none}
+.tel{position:fixed;left:50%;top:50%;height:min(64vh,620px);aspect-ratio:9/16;transform:translate(-50%,-50%);z-index:5;border-radius:26px;overflow:hidden;border:1px solid rgb(255 220 170 / .4);box-shadow:0 0 70px rgb(255 190 110 / .22);opacity:0;pointer-events:none;background:#fff}
+.tel img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.tel.coupe{border-color:rgb(160 220 255 / .4);box-shadow:0 0 70px rgb(90 180 255 / .22);background:#14161e}
+.tel.coupe img{object-position:top}
+.revoir{all:unset;cursor:pointer;position:fixed;right:clamp(16px,3vw,40px);top:clamp(60px,9vh,84px);padding:8px 14px;font-size:clamp(13px,1.1vw,14px);color:var(--texte2);border:1px solid var(--ligne);border-radius:999px;background:rgb(8 11 28 / .6);transition:opacity .8s,color .2s}
+.revoir:hover{color:var(--texte)}
+.cinema .son{opacity:1;pointer-events:auto;z-index:7}
+.passer{z-index:7}
+.mot{display:inline-block;will-change:transform}
+.liens{position:fixed;left:clamp(16px,3vw,40px);top:clamp(74px,11vh,96px);display:flex;gap:8px;z-index:3;transition:opacity 1.2s}
+.liens a{padding:7px 13px;font-size:clamp(13px,1.1vw,14px);color:var(--texte);text-decoration:none;border:1px solid var(--ligne);border-radius:999px;background:rgb(8 11 28 / .6)}
+.liens a:hover{background:rgb(111 230 255 / .14)}
+.rendu .liens{display:none!important}
+.cinema .passer{bottom:18px}
+@media (max-width:760px){.cinema .tag{bottom:calc(10.5vh + 6px)}.cinema .journal{bottom:calc(10.5vh + 34px)}}
+.signature{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;opacity:0;pointer-events:none;font-size:clamp(14px,1.5vw,20px);color:var(--texte2);padding:24px}
+.signature b{font-size:clamp(38px,6vw,84px);font-weight:500;letter-spacing:-.02em;color:#fff}
+.signature .site{font-family:"Geist Mono",monospace;color:#ffd9a0;letter-spacing:.08em}
+.signature small{margin-top:26px;font-size:.72em;color:#6f7aa0}
+.rendu .son,.rendu .passer,.rendu .revoir,.rendu .nav,.rendu .identite{display:none!important}
+.vertical .barre{display:none}
+.vertical .legende{top:250px;width:940px;font-size:50px;line-height:1.2;font-weight:400}
+.vertical .legende.grand{font-size:68px}
+.vertical .journal{left:64px;bottom:400px;max-width:950px;font-size:32px;line-height:1.5}
+.vertical .tag{left:64px;right:64px;bottom:345px;max-width:none;text-align:left;font-size:22px}
+.vertical .tel{height:980px;top:43%}
+.vertical .signature{font-size:36px}.vertical .signature b{font-size:140px}
+@media (max-width:760px){.journal{bottom:calc(10.5vh + 58px)}.tag{bottom:calc(10.5vh + 8px);left:16px;right:16px;max-width:none;text-align:left}.legende{top:calc(10.5vh + 12px)}}
+</style>
+</head>
+<body>
+<div class="barre haut"></div><div class="barre bas"></div>
+<div class="chargement" id="chargement"><span>Chargement du film</span></div>
+<canvas id="u" aria-label="Film d’introduction : une intelligence en étoiles naît des projets de Legma Parfait, développeur full-stack. Le texte du film est lisible à l’écran, et le bouton Passer le film ouvre directement le portfolio."></canvas>
+<div class="identite cache" id="identite"><h1>Legma Parfait</h1><p>Développeur Full-Stack</p></div>
+<button class="son cache" id="son" aria-pressed="false">Activer le son</button>
+<button class="passer cache" id="passer">Passer le film</button>
+<button class="revoir cache" id="revoir">Revoir le film</button>
+<div class="carton" id="carton">
+  <p class="c1" id="c1">Legma Parfait</p>
+  <p class="c2" id="c2">Développeur full-stack</p>
+  <p class="c3" id="c3">Avant le CV, une histoire. Moins de deux minutes.</p>
+  <p class="c4" id="c4">Ne touchez à rien. Regardez.</p>
+  <p class="c5" id="c5">Fiction construite à partir de faits réels de ses projets. Touchez l’écran pour le son.</p>
+</div>
+<div class="journal" id="journal"></div>
+<p class="legende" id="legende"></p>
+<p class="tag" id="tag"></p>
+<div class="pointVie" id="pointVie"></div>
+<div class="tel" id="tel"><img id="telImg" alt="Capture réelle de l’application"></div>
+<div class="signature" id="signature"><b>FasoDigit</b><span>Sites · Applications · Systèmes</span><span class="site">fasodigit.com</span><small>Fiction construite à partir de faits réels de nos projets.</small></div>
+<img class="ecran" id="ecran" alt="Capture de l'application" width="540">
+<div class="nom" id="nom"></div>
+<div id="etiquettes"></div>
+<p class="recit" id="recit" role="status"></p>
+<aside class="fiche" id="fiche" aria-live="polite"></aside>
+<section class="portail" id="portail" aria-label="Contact">
+  <h2>Parlons de votre projet</h2>
+  <a class="btn" href="https://wa.me/22672618167" target="_blank" rel="noopener">Écrire sur WhatsApp</a>
+  <a class="btn sec" href="mailto:legmaparfait6@gmail.com">Envoyer un e-mail</a>
+</section>
+<div class="liens cache" id="liens"><a id="lienCv" href="/fr/cv/">CV</a><a id="lienSite" href="/fr/">Le site complet</a></div>
+<nav class="nav cache" id="nav" aria-label="Explorer l'univers">
+  <button data-mode="projets" aria-pressed="true">Projets</button>
+  <button data-mode="competences" aria-pressed="false">Compétences</button>
+  <button data-mode="parcours" aria-pressed="false">Parcours</button>
+  <button data-mode="contact" aria-pressed="false">Contact</button>
+</nav>
+<div id="listeMondes"></div>
+<script type="module" src="app.js?v=8"></script>
+<script data-goatcounter="https://legmaparfait.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

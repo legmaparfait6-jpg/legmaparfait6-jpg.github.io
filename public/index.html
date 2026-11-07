@@ -11,11 +11,11 @@
     <link rel="alternate" hreflang="x-default" href="/fr/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#0a0b0d" />
-    <!-- Redirection vers la langue du navigateur ; français par défaut. -->
+    <!-- L'entrée du portfolio est le film, dans la langue du navigateur ; français par défaut. -->
     <script>
       (function () {
         var lang = (navigator.language || "fr").toLowerCase().indexOf("en") === 0 ? "en" : "fr";
-        location.replace("/" + lang + "/" + location.hash);
+        location.replace(location.hash ? "/" + lang + "/" + location.hash : "/film/?lang=" + lang);
       })();
     </script>
     <noscript><meta http-equiv="refresh" content="0; url=/fr/" /></noscript>

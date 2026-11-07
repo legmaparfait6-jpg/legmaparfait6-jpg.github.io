@@ -15,7 +15,7 @@ export function Hero({ lang }: { lang: Lang }) {
         {/* Mobile et tablette : cadre où le visage 3D se forme. Sans 3D
             (mouvement réduit, économie de données), la photo s'y affiche. */}
         <div className="hero__face" data-portrait-anchor aria-hidden="true">
-          <img src={profile.photo.src} alt="" width={profile.photo.width} height={profile.photo.height} loading="lazy" decoding="async" />
+          <img src={profile.photo.src} alt="" width={profile.photo.width} height={profile.photo.height} loading="eager" fetchPriority="high" decoding="async" />
           <span className="hero__face-corner" />
           <span className="hero__face-corner" />
           <span className="hero__face-corner" />
@@ -58,6 +58,9 @@ export function Hero({ lang }: { lang: Lang }) {
             <a className="btn" href={profile.cv[lang]} download>
               <DownloadIcon />
               {t(ui.downloadCv, lang)}
+            </a>
+            <a className="btn" href={`/film/?lang=${lang}&revoir=1`}>
+              {lang === "fr" ? "Voir le film" : "Watch the film"}
             </a>
           </div>
 
