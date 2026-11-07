@@ -50,6 +50,8 @@ const LABELS = {
   result: { fr: "Résultat", en: "Result" },
   evolution: { fr: "Évolution possible", en: "Possible evolution" },
   links: { fr: "Code et démo", en: "Code and demo" },
+  website: { fr: "Site public", en: "Public website" },
+  repository: { fr: "Dépôt GitHub", en: "GitHub repository" },
   lenses: { fr: "Technologie, utilisateur, produit, business", en: "Technology, user, product, business" },
   role: { fr: "Rôle", en: "Role" },
   period: { fr: "Période", en: "Period" },
@@ -87,13 +89,13 @@ export default async function MissionPage({ params }: Params) {
     "objective",
     "architecture",
     "technologies",
-    "features",
+    ...(mission.features.length > 0 ? (["features"] as const) : []),
     ...(mission.screenshots.length > 0 || mission.screenshotsNote ? (["screenshots"] as const) : []),
     ...(mission.lenses ? (["lenses"] as const) : []),
-    "decisions",
+    ...(mission.decisions.length > 0 ? (["decisions"] as const) : []),
     ...(mission.challenges.length > 0 ? (["challenges"] as const) : []),
     "result",
-    "evolution",
+    ...(mission.evolution.length > 0 ? (["evolution"] as const) : []),
     "links",
   ];
   const toc = order.map((id, i) => ({ id, n: i + 1, title: l(id) }));
@@ -115,14 +117,16 @@ export default async function MissionPage({ params }: Params) {
           </div>
           <h1 className="mission-hero__title">{mission.name}</h1>
           <p className="mission-hero__summary">{t(mission.summary, lang)}</p>
-          <ul className="figures">
-            {mission.figures.map((f) => (
-              <li key={f.label.en} className="figures__item">
-                <span className="figures__value">{f.value}</span>
-                <span className="figures__label">{t(f.label, lang)}</span>
-              </li>
-            ))}
-          </ul>
+          {mission.figures.length > 0 ? (
+            <ul className="figures">
+              {mission.figures.map((f) => (
+                <li key={f.label.en} className="figures__item">
+                  <span className="figures__value">{f.value}</span>
+                  <span className="figures__label">{t(f.label, lang)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           </div>
           <MissionVisual mission={mission} lang={lang} />
           </div>
@@ -178,14 +182,16 @@ export default async function MissionPage({ params }: Params) {
         <Block id="architecture" n={order.indexOf("architecture") + 1} title={l("architecture")}>
           <div className="dossier__body">
             <p>{t(mission.architecture.intro, lang)}</p>
-            <ol className="flow flow--live" style={{ "--n": mission.architecture.flow.length } as CSSProperties}>
-              {mission.architecture.flow.map((step, i) => (
-                <li key={step.label.en} className="flow__step" style={{ "--i": i } as CSSProperties}>
-                  <span className="flow__label">{t(step.label, lang)}</span>
-                  <span className="flow__detail">{t(step.detail, lang)}</span>
-                </li>
-              ))}
-            </ol>
+            {mission.architecture.flow.length > 0 ? (
+              <ol className="flow flow--live" style={{ "--n": mission.architecture.flow.length } as CSSProperties}>
+                {mission.architecture.flow.map((step, i) => (
+                  <li key={step.label.en} className="flow__step" style={{ "--i": i } as CSSProperties}>
+                    <span className="flow__label">{t(step.label, lang)}</span>
+                    <span className="flow__detail">{t(step.detail, lang)}</span>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
           </div>
         </Block>
 
@@ -206,13 +212,15 @@ export default async function MissionPage({ params }: Params) {
           </div>
         </Block>
 
-        <Block id="features" n={order.indexOf("features") + 1} title={l("features")}>
-          <ul className="checklist">
-            {mission.features.map((f) => (
-              <li key={f.en}>{t(f, lang)}</li>
-            ))}
-          </ul>
-        </Block>
+        {mission.features.length > 0 ? (
+          <Block id="features" n={order.indexOf("features") + 1} title={l("features")}>
+            <ul className="checklist">
+              {mission.features.map((f) => (
+                <li key={f.en}>{t(f, lang)}</li>
+              ))}
+            </ul>
+          </Block>
+        ) : null}
 
         {mission.screenshots.length > 0 || mission.screenshotsNote ? (
           <Block id="screenshots" n={order.indexOf("screenshots") + 1} title={l("screenshots")}>
@@ -253,16 +261,18 @@ export default async function MissionPage({ params }: Params) {
           </Block>
         ) : null}
 
-        <Block id="decisions" n={order.indexOf("decisions") + 1} title={l("decisions")}>
-          <div className="cards cards--2">
-            {mission.decisions.map((d) => (
-              <div key={d.title.en} className="card">
-                <h3 className="card__title">{t(d.title, lang)}</h3>
-                <p className="card__text">{t(d.why, lang)}</p>
-              </div>
-            ))}
-          </div>
-        </Block>
+        {mission.decisions.length > 0 ? (
+          <Block id="decisions" n={order.indexOf("decisions") + 1} title={l("decisions")}>
+            <div className="cards cards--2">
+              {mission.decisions.map((d) => (
+                <div key={d.title.en} className="card">
+                  <h3 className="card__title">{t(d.title, lang)}</h3>
+                  <p className="card__text">{t(d.why, lang)}</p>
+                </div>
+              ))}
+            </div>
+          </Block>
+        ) : null}
 
         {mission.challenges.length > 0 ? (
           <Block id="challenges" n={order.indexOf("challenges") + 1} title={l("challenges")}>
@@ -281,17 +291,39 @@ export default async function MissionPage({ params }: Params) {
           <p className="dossier__body dossier__body--lead">{t(mission.result, lang)}</p>
         </Block>
 
-        <Block id="evolution" n={order.indexOf("evolution") + 1} title={l("evolution")}>
-          <ul className="checklist checklist--next">
-            {mission.evolution.map((e) => (
-              <li key={e.en}>{t(e, lang)}</li>
-            ))}
-          </ul>
-        </Block>
+        {mission.evolution.length > 0 ? (
+          <Block id="evolution" n={order.indexOf("evolution") + 1} title={l("evolution")}>
+            <ul className="checklist checklist--next">
+              {mission.evolution.map((e) => (
+                <li key={e.en}>{t(e, lang)}</li>
+              ))}
+            </ul>
+          </Block>
+        ) : null}
 
         <Block id="links" n={order.indexOf("links") + 1} title={l("links")}>
           <div className="dossier__body">
             <p>{t(mission.repo, lang)}</p>
+            {mission.website ? (
+              <p>
+                <a className="btn" href={mission.website} target="_blank" rel="noopener noreferrer">
+                  {l("website")} : {new URL(mission.website).hostname}
+                  <span className="btn__arrow">
+                    <Arrow />
+                  </span>
+                </a>
+              </p>
+            ) : null}
+            {mission.repository ? (
+              <p>
+                <a className="btn" href={mission.repository} target="_blank" rel="noopener noreferrer">
+                  {l("repository")}
+                  <span className="btn__arrow">
+                    <Arrow />
+                  </span>
+                </a>
+              </p>
+            ) : null}
             <p>
               <a className="btn" href={`mailto:${profile.email}?subject=${encodeURIComponent(`${mission.name}`)}`}>
                 {l("contact")}

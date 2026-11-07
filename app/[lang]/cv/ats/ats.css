@@ -74,7 +74,7 @@
 
 @page {
   size: A4;
-  margin: 11mm 15mm;
+  margin: 9mm 15mm;
 }
 
 @media print {
@@ -104,7 +104,7 @@
     margin: 0;
     padding: 0;
     font-size: 9.2pt;
-    line-height: 1.36;
+    line-height: 1.25;
   }
 
   .ats h1 {
@@ -112,7 +112,7 @@
   }
 
   .ats h2 {
-    margin: 3.2mm 0 1.4mm;
+    margin: 2.4mm 0 1mm;
   }
 
   .ats li + li {
@@ -120,7 +120,7 @@
   }
 
   .ats__entry + .ats__entry {
-    margin-top: 2.4mm;
+    margin-top: 2mm;
   }
 
   .ats__entry,

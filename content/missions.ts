@@ -6,16 +6,20 @@ import type { L } from "@/lib/i18n";
  * uniquement en développement, jamais publié.
  */
 
-export type MissionStatus = "delivered" | "active" | "paused" | "preparation" | "academic";
+export type MissionStatus = "live" | "delivered" | "active" | "paused" | "preparation" | "academic";
 
 export type FlowStep = { label: L; detail: L };
 export type Decision = { title: L; why: L };
 export type Screenshot = { src: string; width: number; height: number; alt: L; caption: L };
+export type BrandAsset = { src: string; width: number; height: number; alt: L };
+export type MissionWorld = { surface: string; light: string; accent: string };
 
 export type Mission = {
   slug: string;
   code: string;
   name: string;
+  /** Palette propre à l'illustration orbitale du projet. */
+  world: MissionWorld;
   status: MissionStatus;
   context: L;
   role: L;
@@ -31,6 +35,11 @@ export type Mission = {
   technologies: { group: L; items: string[] }[];
   features: L[];
   screenshots: Screenshot[];
+  brand?: BrandAsset;
+  /** Public product site, when one has been verified. */
+  website?: string;
+  /** Verified source repository, when one is configured. */
+  repository?: string;
   screenshotsNote?: L;
   decisions: Decision[];
   challenges: Decision[];
@@ -43,6 +52,7 @@ export type Mission = {
 };
 
 export const STATUS_LABEL: Record<MissionStatus, L> = {
+  live: { fr: "En ligne", en: "Live" },
   delivered: { fr: "Livré", en: "Delivered" },
   active: { fr: "Pré-lancement", en: "Pre-launch" },
   paused: { fr: "En pause", en: "Paused" },
@@ -63,6 +73,7 @@ export const missions: Mission[] = [
     slug: "network-supervision",
     code: "001",
     name: "Network Supervision",
+    world: { surface: "#174873", light: "#59a9dc", accent: "#a9e6ff" },
     status: "delivered",
     context: { fr: "Stage — Moov Africa", en: "Internship — Moov Africa" },
     role: { fr: "Conception et développement", en: "Design and development" },
@@ -239,7 +250,8 @@ export const missions: Mission[] = [
     slug: "fasocommerce",
     code: "002",
     name: "FasoCommerce",
-    status: "active",
+    world: { surface: "#71451e", light: "#d49538", accent: "#ffe2a0" },
+    status: "live",
     context: { fr: "Produit — SaaS", en: "Product — SaaS" },
     role: {
       fr: "Conception, architecture et développement full-stack",
@@ -253,7 +265,7 @@ export const missions: Mission[] = [
     figures: [
       { value: "15", label: { fr: "modules activables", en: "switchable modules" } },
       { value: "13", label: { fr: "profils métier", en: "trade profiles" } },
-      { value: "207", label: { fr: "tests backend", en: "backend tests" } },
+      { value: "453", label: { fr: "tests backend", en: "backend tests" } },
       { value: "3", label: { fr: "rôles d'équipe", en: "team roles" } },
     ],
     stack: ["Next.js", "TypeScript", "FastAPI", "PostgreSQL", "Docker"],
@@ -416,15 +428,16 @@ export const missions: Mission[] = [
       },
     ],
     result: {
-      fr: "Pré-lancement : 15 modules, 207 tests backend automatisés, tests end-to-end et d'accessibilité, intégration continue. La grille d'abonnement est définie et reste à valider auprès de commerçants.",
-      en: "Pre-launch: 15 modules, 207 automated backend tests, end-to-end and accessibility tests, continuous integration. The pricing grid is defined and still to be validated with merchants.",
+      fr: "En ligne sur commerce.fasodigit.com et ouvert à la vente depuis novembre 2026, avec 30 jours d'essai gratuit. 15 modules, 453 tests backend automatisés, tests end-to-end et d'accessibilité, intégration continue et déploiement par GitHub Actions.",
+      en: "Live at commerce.fasodigit.com and open for sale since November 2026, with a 30-day free trial. 15 modules, 453 automated backend tests, end-to-end and accessibility tests, continuous integration and deployment through GitHub Actions.",
     },
     evolution: [
-      { fr: "Tests terrain avec des commerçants", en: "Field tests with merchants" },
+      { fr: "Accompagnement des premiers commerçants abonnés", en: "Hands-on support for the first subscribed merchants" },
       { fr: "Application mobile Flutter sur la même API", en: "Flutter mobile app on the same API" },
       { fr: "Assistant de commande sur WhatsApp", en: "Ordering assistant on WhatsApp" },
       { fr: "Nouveaux profils métier", en: "New trade profiles" },
     ],
+    website: "https://commerce.fasodigit.com/",
     repo: { fr: "Dépôt privé — démonstration sur demande", en: "Private repository — demo on request" },
     pending: [],
   },
@@ -432,6 +445,7 @@ export const missions: Mission[] = [
     slug: "forexsaas",
     code: "003",
     name: "ForexSaaS",
+    world: { surface: "#3c286e", light: "#8b71d6", accent: "#d9c8ff" },
     status: "paused",
     context: { fr: "Produit — aide à la décision", en: "Product — decision support" },
     role: { fr: "Conception et développement", en: "Design and development" },
@@ -581,67 +595,72 @@ export const missions: Mission[] = [
     slug: "fasodigit",
     code: "004",
     name: "FasoDigit",
-    status: "preparation",
-    context: { fr: "Projet entrepreneurial", en: "Entrepreneurial project" },
-    role: { fr: "Fondateur — conception et développement", en: "Founder — design and development" },
-    period: null,
+    world: { surface: "#18553e", light: "#34bb78", accent: "#b5ffd2" },
+    status: "live",
+    context: { fr: "Projet entrepreneurial — académie et services", en: "Entrepreneurial project — academy and services" },
+    role: { fr: "Fondateur — conception, développement et exploitation", en: "Founder — design, development and operations" },
+    period: { fr: "En ligne depuis octobre 2026", en: "Live since October 2026" },
     summary: {
-      fr: "Une académie numérique qui réunit formation, services digitaux et accompagnement.",
-      en: "A digital academy bringing together training, digital services and support.",
+      fr: "Une académie en ligne (guides, formations avec attestation vérifiable, Club, CV) et des solutions sur mesure pour les commerces, sur un même site.",
+      en: "An online academy (guides, courses with verifiable certificates, a reading Club, CVs) and custom solutions for businesses, on one site.",
     },
     figures: [
-      { value: "4", label: { fr: "versions de la page vitrine", en: "landing page versions" } },
-      { value: "3", label: { fr: "piliers : formation, services, accompagnement", en: "pillars: training, services, support" } },
+      { value: "2", label: { fr: "parcours : Académie et Services", en: "paths: Academy and Services" } },
+      { value: "482", label: { fr: "tests automatisés", en: "automated tests" } },
     ],
-    stack: ["HTML", "CSS", "JavaScript", "Django"],
+    stack: ["Python", "Django", "PostgreSQL", "nginx", "React"],
     context_long: {
-      fr: "Beaucoup de jeunes et de petites entreprises veulent utiliser les outils numériques, mais manquent d'un accompagnement concret et accessible.",
-      en: "Many young people and small businesses want to use digital tools but lack concrete, accessible support.",
+      fr: "Beaucoup de jeunes et de petites entreprises au Burkina Faso veulent utiliser le numérique, mais manquent de contenus pratiques et d'un interlocuteur qui construit avec eux.",
+      en: "Many young people and small businesses in Burkina Faso want to go digital but lack practical content and someone who builds with them.",
     },
     problem: {
-      fr: "Les formations disponibles sont souvent théoriques, loin des outils réellement utilisés au quotidien.",
-      en: "Available training is often theoretical and far from the tools actually used day to day.",
+      fr: "Les formations disponibles sont souvent théoriques, difficiles à payer en ligne et sans preuve reconnue à la fin.",
+      en: "Available training is often theoretical, hard to pay for online and ends without a recognised proof.",
     },
     objective: {
-      fr: "Proposer des parcours pratiques, des services de développement web et un accompagnement vers le numérique.",
-      en: "Offer hands-on learning paths, web development services and digital transformation support.",
+      fr: "Vendre des contenus utiles payables par Orange Money ou Wave, délivrer des attestations vérifiables et présenter les services de développement sur rendez-vous.",
+      en: "Sell useful content payable with Orange Money or Wave, issue verifiable certificates and present development services by appointment.",
     },
     architecture: {
       intro: {
-        fr: "Une page vitrine pour tester l'offre et le message, avant la plateforme d'inscription.",
-        en: "A landing page to test the offer and the message before building the enrolment platform.",
+        fr: "Application Django découpée par domaine (guides, formations, attestations, Club, CV, ambassadeurs, espace client, administration), base PostgreSQL, servie par nginx sur un serveur privé virtuel. Un studio intégré produit les images et vidéos des réseaux sociaux.",
+        en: "A Django application split by domain (guides, courses, certificates, Club, CV, ambassadors, customer area, admin), PostgreSQL database, served by nginx on a virtual private server. A built-in studio produces social media images and videos.",
       },
       flow: [
-        {
-          label: { fr: "Message", en: "Message" },
-          detail: { fr: "Page vitrine, retravaillée en quatre versions.", en: "Landing page, reworked across four versions." },
-        },
-        {
-          label: { fr: "Offre", en: "Offer" },
-          detail: { fr: "Parcours de formation et réservation de place.", en: "Learning paths and seat booking." },
-        },
-        {
-          label: { fr: "Plateforme", en: "Platform" },
-          detail: { fr: "Application Django amorcée.", en: "Django application started." },
-        },
+        { label: { fr: "Découvrir", en: "Discover" }, detail: { fr: "Pages Académie et Services, vidéos de démonstration de 30 secondes.", en: "Academy and Services pages, 30-second demo videos." } },
+        { label: { fr: "Payer", en: "Pay" }, detail: { fr: "Commande en ligne, paiement Orange Money ou Wave, confirmation dans l'administration.", en: "Online order, Orange Money or Wave payment, confirmed in the admin." } },
+        { label: { fr: "Apprendre", en: "Learn" }, detail: { fr: "Guide reçu sur WhatsApp, modules de formation, examen en ligne.", en: "Guide delivered on WhatsApp, course modules, online exam." } },
+        { label: { fr: "Prouver", en: "Prove" }, detail: { fr: "Attestation avec QR code, vérifiable par un employeur.", en: "Certificate with a QR code an employer can verify." } },
       ],
     },
     technologies: [
-      { group: { fr: "Vitrine", en: "Landing" }, items: ["HTML", "CSS", "JavaScript"] },
-      { group: { fr: "Plateforme", en: "Platform" }, items: ["Python", "Django"] },
+      { group: { fr: "Application", en: "Application" }, items: ["Python", "Django", "HTML / CSS", "JavaScript"] },
+      { group: { fr: "Données et serveur", en: "Data and server" }, items: ["PostgreSQL", "nginx", "VPS Linux"] },
+      { group: { fr: "Studio de contenus", en: "Content studio" }, items: ["Pillow", "ffmpeg", "React (Remotion)"] },
     ],
     features: [
-      { fr: "Présentation des parcours et des outils enseignés", en: "Learning paths and taught tools" },
-      { fr: "Réservation de place", en: "Seat booking" },
-      { fr: "Présentation des services digitaux", en: "Digital services presentation" },
+      { fr: "Catalogue de guides pratiques, achat en quelques gestes et livraison sur WhatsApp", en: "Catalogue of practical guides, purchase in a few steps and delivery on WhatsApp" },
+      { fr: "Formations en ligne, parcours métier et attestations vérifiables par QR code", en: "Online courses, career paths and QR-verifiable certificates" },
+      { fr: "Club de lecture sans engagement et générateur de CV professionnel", en: "Commitment-free reading Club and professional CV builder" },
+      { fr: "Programme ambassadeurs avec code, liens suivis et commission sur les ventes", en: "Ambassador programme with a code, tracked links and sales commission" },
+      { fr: "Espace client et administration guidée « Je veux… »", en: "Customer area and guided “I want to…” admin" },
+      { fr: "Studio intégré : images, affiches et vidéos animées pour les réseaux sociaux", en: "Built-in studio: images, posters and animated videos for social media" },
     ],
     screenshots: [],
+    website: "https://fasodigit.com/",
     decisions: [
       {
-        title: { fr: "Tester l'offre avant de construire", en: "Test the offer before building" },
+        title: { fr: "Le paiement qu'utilisent vraiment les clients", en: "The payment customers actually use" },
         why: {
-          fr: "Une page vitrine permet de confronter le message et l'offre au public avant d'investir dans la plateforme.",
-          en: "A landing page puts the message and the offer in front of people before investing in the platform.",
+          fr: "Orange Money et Wave plutôt que la carte bancaire : chaque commande est confirmée à la main dans l'administration avant la livraison.",
+          en: "Orange Money and Wave rather than bank cards: each order is confirmed by hand in the admin before delivery.",
+        },
+      },
+      {
+        title: { fr: "Une preuve vérifiable", en: "A verifiable proof" },
+        why: {
+          fr: "Chaque attestation porte un QR code qui renvoie vers sa page de vérification sur le site.",
+          en: "Each certificate carries a QR code linking to its verification page on the site.",
         },
       },
     ],
@@ -649,36 +668,37 @@ export const missions: Mission[] = [
     lenses: [
       {
         label: { fr: "Technologie", en: "Technology" },
-        text: { fr: "Une vitrine rapide aujourd'hui, une plateforme Django demain.", en: "A fast landing page today, a Django platform tomorrow." },
+        text: { fr: "Un monolithe Django testé, déployé sur un serveur que je gère.", en: "A tested Django monolith, deployed on a server I run." },
       },
       {
         label: { fr: "Utilisateur", en: "User" },
-        text: { fr: "Des apprenants qui veulent des compétences directement utilisables.", en: "Learners who want skills they can use right away." },
+        text: { fr: "Des apprenants et des commerçants qui veulent des résultats utilisables tout de suite.", en: "Learners and merchants who want results they can use right away." },
       },
       {
         label: { fr: "Produit", en: "Product" },
-        text: { fr: "Formation, services et accompagnement dans une même offre.", en: "Training, services and support in one offer." },
+        text: { fr: "L'Académie en ligne, les Services sur rendez-vous.", en: "The Academy online, Services by appointment." },
       },
       {
         label: { fr: "Business", en: "Business" },
-        text: { fr: "Valider la demande avant de développer.", en: "Validate demand before building." },
+        text: { fr: "Des contenus à petit prix qui font connaître les services.", en: "Low-priced content that introduces the services." },
       },
     ],
     result: {
-      fr: "En préparation : page vitrine réalisée, plateforme amorcée.",
-      en: "In preparation: landing page done, platform started.",
+      fr: "En ligne sur fasodigit.com depuis octobre 2026 : Académie, Club, CV, attestations et pages Services, avec 482 tests automatisés.",
+      en: "Live at fasodigit.com since October 2026: Academy, Club, CV, certificates and Services pages, with 482 automated tests.",
     },
     evolution: [
-      { fr: "Inscription et paiement Mobile Money", en: "Enrolment and Mobile Money payment" },
-      { fr: "Suivi de progression des apprenants", en: "Learner progress tracking" },
+      { fr: "Nouveaux guides et formations", en: "New guides and courses" },
+      { fr: "Photos et vidéos tournées sur le terrain", en: "Photos and videos shot in the field" },
     ],
-    repo: { fr: "Non publié", en: "Not published" },
-    pending: ["Date de lancement prévue"],
+    repo: { fr: "Dépôt privé", en: "Private repository" },
+    pending: [],
   },
   {
     slug: "taxi-compteur",
     code: "005",
     name: "Taxi Compteur",
+    world: { surface: "#6d321e", light: "#df7647", accent: "#ffc487" },
     status: "academic",
     context: { fr: "Projet académique — mobile", en: "Academic project — mobile" },
     role: { fr: "Développement mobile", en: "Mobile development" },
@@ -757,6 +777,385 @@ export const missions: Mission[] = [
     ],
     repo: { fr: "Non publié", en: "Not published" },
     pending: ["Année et cadre du projet académique"],
+  },
+  {
+    slug: "codeburkina",
+    code: "006",
+    name: "CodeBurkina",
+    world: { surface: "#315623", light: "#82ae42", accent: "#f1d477" },
+    status: "active",
+    context: { fr: "Prototype éducatif — web et mobile", en: "Education prototype — web and mobile" },
+    role: { fr: "Conception et développement de l’application", en: "Application design and development" },
+    period: null,
+    summary: {
+      fr: "Un prototype Flutter pour réviser le code de la route au Burkina Faso, avec cours, quiz et progression enregistrée sur l’appareil.",
+      en: "A Flutter prototype for studying road rules in Burkina Faso, with lessons, quizzes and on-device progress tracking.",
+    },
+    figures: [
+      { value: "10", label: { fr: "cours dans les données locales", en: "lessons in the local data" } },
+      { value: "15", label: { fr: "questions dans le jeu de données fourni", en: "questions in the bundled dataset" } },
+    ],
+    stack: ["Flutter", "Dart", "Provider", "SharedPreferences"],
+    context_long: {
+      fr: "Le projet vise les personnes qui préparent l’examen du code de la route au Burkina Faso. Les documents du dossier explorent un apprentissage utilisable avec une connexion limitée.",
+      en: "The project is aimed at people preparing for the driving theory exam in Burkina Faso. Its documentation explores learning with limited connectivity.",
+    },
+    problem: {
+      fr: "Réviser sur téléphone avec des cours et des quiz accessibles même lorsque la connexion est limitée.",
+      en: "Study on a phone with lessons and quizzes available when connectivity is limited.",
+    },
+    objective: {
+      fr: "Proposer un prototype de révision mobile et web, avec des contenus embarqués et une progression conservée localement.",
+      en: "Build a mobile and web study prototype with bundled learning content and locally saved progress.",
+    },
+    architecture: {
+      intro: {
+        fr: "Application Flutter structurée en écrans de présentation, entités métier et source de données locale. Provider porte l’état de l’application; les cours et questions sont lus depuis des fichiers JSON embarqués, et la progression est enregistrée avec SharedPreferences.",
+        en: "A Flutter application organized into presentation screens, domain entities and a local data source. Provider holds app state; lessons and questions are loaded from bundled JSON files, and progress is saved with SharedPreferences.",
+      },
+      flow: [
+        { label: { fr: "Contenus", en: "Content" }, detail: { fr: "Cours et questions lus depuis les fichiers JSON inclus dans l’application.", en: "Lessons and questions loaded from JSON files bundled with the app." } },
+        { label: { fr: "Révision", en: "Study" }, detail: { fr: "Écrans de cours, synthèse vocale, quiz par module et examen chronométré.", en: "Lesson screens, text to speech, module quizzes and a timed exam." } },
+        { label: { fr: "Progression", en: "Progress" }, detail: { fr: "Scores, XP et questions manquées conservés localement.", en: "Scores, XP and missed questions saved locally." } },
+        { label: { fr: "Partage", en: "Sharing" }, detail: { fr: "Fiches PDF, attestation générée et carte de score partageable.", en: "PDF lesson sheets, a generated certificate and a shareable score card." } },
+      ],
+    },
+    technologies: [
+      { group: { fr: "Application", en: "Application" }, items: ["Flutter", "Dart", "Provider"] },
+      { group: { fr: "Données locales", en: "Local data" }, items: ["JSON", "SharedPreferences"] },
+      { group: { fr: "Fonctions", en: "Features" }, items: ["FlutterTts", "PDF", "Printing", "Share Plus"] },
+      { group: { fr: "Web", en: "Web" }, items: ["Flutter Web", "Service Worker", "Web App Manifest"] },
+    ],
+    features: [
+      { fr: "Consultation des cours et de scénarios illustrés par des panneaux routiers", en: "Lessons and illustrated road-sign scenarios" },
+      { fr: "Lecture des cours par synthèse vocale française et génération de fiches PDF", en: "French text-to-speech for lessons and generated PDF study sheets" },
+      { fr: "Quiz par module, examen blanc chronométré et affichage du score", en: "Module quizzes, a timed mock exam and score display" },
+      { fr: "Suivi local des résultats, des XP et des questions manquées", en: "Local tracking of results, XP and missed questions" },
+      { fr: "Carte de score partageable et génération d’une attestation PDF", en: "Shareable score card and generated PDF certificate" },
+      { fr: "Écrans de compte, de progression et de rattachement à un partenaire", en: "Account, progress and partner-linking screens" },
+      { fr: "Service worker et manifeste web présents pour la version Flutter Web; le fonctionnement hors ligne en production reste à vérifier", en: "Service worker and web manifest included for Flutter Web; production offline behavior remains to be verified" },
+    ],
+    screenshots: [],
+    screenshotsNote: {
+      fr: "Aucune capture d’écran du prototype n’est incluse dans le dossier accessible.",
+      en: "No prototype screenshots are included in the accessible project folder.",
+    },
+    decisions: [
+      {
+        title: { fr: "Contenus embarqués", en: "Bundled content" },
+        why: { fr: "Les cours et les questions sont fournis dans des fichiers locaux, ce qui évite un chargement réseau pour les consulter.", en: "Lessons and questions are bundled locally, so viewing them does not require a network request." },
+      },
+      {
+        title: { fr: "Progression enregistrée sur l’appareil", en: "Progress saved on the device" },
+        why: { fr: "Le prototype conserve les résultats et préférences avec SharedPreferences, sans service backend visible dans le code examiné.", en: "The prototype stores results and preferences with SharedPreferences, with no backend service visible in the reviewed code." },
+      },
+    ],
+    challenges: [],
+    result: {
+      fr: "Prototype Flutter avec interface web, données de cours locales, quiz et persistance de la progression. Le dépôt accessible ne permet pas de confirmer une publication ou un usage en production.",
+      en: "Flutter prototype with a web interface, local lesson data, quizzes and saved progress. The accessible files do not confirm a production release or use.",
+    },
+    evolution: [
+      { fr: "Compléter et valider la banque de questions avec des références pédagogiques vérifiables.", en: "Expand and validate the question bank against verifiable learning references." },
+      { fr: "Vérifier les parcours de paiement, de licence et de partenariat avant toute présentation comme service opérationnel.", en: "Verify payment, licensing and partner flows before presenting them as operational services." },
+      { fr: "Valider l’installation, le cache hors ligne et les parcours sur appareils réels.", en: "Validate installation, offline caching and key flows on real devices." },
+    ],
+    disclaimer: {
+      fr: "Les mentions de conformité ONASER, de paiements et de partenariats figurant dans les documents stratégiques ne prouvent pas une validation officielle ni une exploitation effective. L’attestation générée est un document de l’application, pas un certificat délivré par l’ONASER.",
+      en: "References to ONASER compliance, payments and partnerships in strategy documents do not establish official approval or live operations. The generated attestation is an app document, not a certificate issued by ONASER.",
+    },
+    repo: { fr: "Code source local; aucun dépôt Git n’est configuré dans le dossier accessible.", en: "Local source files; no Git repository is configured in the accessible folder." },
+    pending: ["Dépôt GitHub exact et lien de démonstration", "Période du projet et rôle personnel précis", "État de publication et validation des contenus réglementaires"],
+  },
+  {
+    slug: "jl-express",
+    code: "007",
+    name: "JL EXPRESS",
+    world: { surface: "#124765", light: "#159de0", accent: "#a5e9ff" },
+    status: "delivered",
+    context: { fr: "Réalisation pour un client — application mobile", en: "Client project — mobile app" },
+    role: { fr: "Conception et développement de l’application", en: "Application design and development" },
+    period: { fr: "Octobre 2026", en: "October 2026" },
+    summary: {
+      fr: "Une application livrée à un coursier de Ouagadougou : ses missions, ses clients, l’argent du jour et la monnaie à rendre, plus un studio pour créer ses publicités WhatsApp.",
+      en: "An app delivered to a courier in Ouagadougou: jobs, clients, the day’s money and change to give back, plus a studio to create WhatsApp ads.",
+    },
+    figures: [
+      { value: "4", label: { fr: "parcours métier : missions, clients, finances et Studio", en: "business areas: jobs, clients, finance and Studio" } },
+      { value: "PDF", label: { fr: "reçus et rapports d’activité", en: "receipts and activity reports" } },
+    ],
+    stack: ["Flutter", "Dart", "SharedPreferences", "PDF", "QR"],
+    context_long: {
+      fr: "JL EXPRESS regroupe la gestion quotidienne d’une activité de livraison et la création de visuels professionnels dans une seule application Flutter. Les données métier sont conservées sur l’appareil.",
+      en: "JL EXPRESS brings day-to-day delivery management and professional visual creation together in one Flutter app. Business data is stored on the device.",
+    },
+    problem: {
+      fr: "Un livreur doit suivre ses missions, ses clients, les montants encaissés et les dépenses sans disperser ces informations entre plusieurs outils.",
+      en: "A courier needs to track jobs, clients, collected payments and expenses without scattering that information across tools.",
+    },
+    objective: {
+      fr: "Rassembler les opérations courantes et la création de supports partageables dans un outil mobile qui fonctionne avec des données locales.",
+      en: "Bring daily operations and shareable business materials into one mobile tool backed by local data.",
+    },
+    architecture: {
+      intro: {
+        fr: "Application Flutter organisée par fonctionnalités. AppStore conserve le profil, les missions, les clients et les dépenses; StudioStore gère les créations. Les objets sont sérialisés en JSON dans SharedPreferences, sans backend ni synchronisation configurés.",
+        en: "A feature-based Flutter app. AppStore holds the profile, jobs, clients and expenses; StudioStore manages saved designs. Objects are serialized as JSON in SharedPreferences, with no backend or sync configured.",
+      },
+      flow: [
+        { label: { fr: "Profil", en: "Profile" }, detail: { fr: "Coordonnées, activité, services et préférences locales.", en: "Contact details, business activity, services and local preferences." } },
+        { label: { fr: "Missions et clients", en: "Jobs and clients" }, detail: { fr: "Création, suivi d’état, trajets, montants et historique des clients.", en: "Create and track job status, routes, amounts and client history." } },
+        { label: { fr: "Finances", en: "Finance" }, detail: { fr: "Encaissements, dépenses, montants à recevoir et calcul de monnaie.", en: "Collections, expenses, amounts due and change calculation." } },
+        { label: { fr: "Documents et Studio", en: "Documents and Studio" }, detail: { fr: "Reçus, rapport PDF et visuels exportables à partir de modèles.", en: "Receipts, PDF reports and template-based visuals for export." } },
+      ],
+    },
+    technologies: [
+      { group: { fr: "Application", en: "Application" }, items: ["Flutter", "Dart", "Material"] },
+      { group: { fr: "Stockage local", en: "Local storage" }, items: ["SharedPreferences", "JSON"] },
+      { group: { fr: "Documents et partage", en: "Documents and sharing" }, items: ["pdf", "printing", "share_plus"] },
+      { group: { fr: "Studio", en: "Studio" }, items: ["image_picker", "image", "gal", "qr_flutter"] },
+    ],
+    features: [
+      { fr: "Profil du livreur et gestion des missions avec client, trajet, statut et montant", en: "Courier profile and jobs with client, route, status and amount" },
+      { fr: "Répertoire clients et calcul des sommes restant à encaisser", en: "Client directory and calculation of outstanding collections" },
+      { fr: "Saisie des dépenses et vues financières par période", en: "Expense entry and financial views by period" },
+      { fr: "Reçus de mission et rapport d’activité exportables en PDF", en: "Job receipts and activity reports exportable as PDFs" },
+      { fr: "Studio de création : modèles, personnalisation, QR code, photos et export PNG, JPG ou PDF", en: "Design Studio with templates, customization, QR codes, photos and PNG, JPG or PDF export" },
+    ],
+    screenshots: [
+      { src: "/missions/jl-express/accueil.webp", width: 540, height: 1218, alt: { fr: "Écran d’accueil : prochaine mission, sommes à recevoir, encaissé, dépenses et net", en: "Home screen: next job, amounts due, collected, expenses and net" }, caption: { fr: "Accueil", en: "Home" } },
+      { src: "/missions/jl-express/argent.webp", width: 540, height: 1218, alt: { fr: "Écran Argent : encaissé, dépenses, net et à recevoir, filtrés par période", en: "Money screen: collected, expenses, net and due, filtered by period" }, caption: { fr: "Argent du jour", en: "Daily money" } },
+      { src: "/missions/jl-express/monnaie.webp", width: 540, height: 1218, alt: { fr: "Calcul de la monnaie à rendre au client à partir du montant de la course", en: "Change calculator based on the job amount" }, caption: { fr: "Monnaie à rendre", en: "Change to give back" } },
+      { src: "/missions/jl-express/studio.webp", width: 540, height: 1218, alt: { fr: "Studio : choix du type de visuel et des modèles de statut WhatsApp", en: "Studio: choice of visual type and WhatsApp status templates" }, caption: { fr: "Studio", en: "Studio" } },
+      { src: "/missions/jl-express/creations.webp", width: 540, height: 1218, alt: { fr: "Créations enregistrées : cartes, affiches et statuts", en: "Saved designs: cards, posters and statuses" }, caption: { fr: "Mes créations", en: "My designs" } },
+    ],
+    brand: {
+      src: "/missions/jl-express/logo.webp",
+      width: 800,
+      height: 735,
+      alt: {
+        fr: "Logo JL EXPRESS avec la signature Livrer. Gérer. Avancer.",
+        en: "JL EXPRESS logo with the tagline Deliver. Manage. Move forward.",
+      },
+    },
+    screenshotsNote: {
+      fr: "Captures de l’application livrée. À la demande du client, son visage, son nom et ses numéros n’apparaissent nulle part ; les montants affichés sont à zéro.",
+      en: "Screenshots of the delivered app. At the client’s request, their face, name and phone numbers never appear; amounts shown are zero.",
+    },
+    decisions: [
+      {
+        title: { fr: "Stockage hors ligne", en: "Offline storage" },
+        why: { fr: "Les stores gardent les données localement avec SharedPreferences, sans dépendre d’un service serveur.", en: "The stores keep data locally with SharedPreferences, without relying on a server service." },
+      },
+      {
+        title: { fr: "Studio fondé sur des modèles", en: "Template-based Studio" },
+        why: { fr: "Les créations combinent un modèle, le profil courant et des champs personnalisés, puis peuvent être exportées ou partagées.", en: "Creations combine a template, the current profile and custom fields, then can be exported or shared." },
+      },
+    ],
+    challenges: [],
+    result: {
+      fr: "Application Android livrée au client en octobre 2026. Le client s’est dit satisfait et prêt à nous recommander.",
+      en: "Android app delivered to the client in October 2026. The client said they were satisfied and ready to recommend us.",
+    },
+    evolution: [
+      { fr: "Publication sur le Play Store avec un identifiant et une signature définitifs.", en: "Play Store release with a final application ID and signing key." },
+      { fr: "Sauvegarde des données en ligne, pour ne rien perdre en changeant de téléphone.", en: "Online data backup, so nothing is lost when changing phones." },
+      { fr: "Ajouter une restauration guidée des données et renforcer les tests des parcours Finance, Clients et stockage.", en: "Add guided data recovery and broaden Finance, Clients and storage-flow tests." },
+    ],
+    disclaimer: {
+      fr: "Application locale : les données restent sur le téléphone du livreur. Cette version n’a ni compte en ligne ni synchronisation.",
+      en: "Local app: data stays on the courier’s phone. This version has no online account or sync.",
+    },
+    repo: { fr: "Dépôt source GitHub.", en: "GitHub source repository." },
+    repository: "https://github.com/legmaparfait6-jpg/jl-express",
+    pending: [],
+  },
+  {
+    slug: "fasoconsult",
+    code: "008",
+    name: "FasoConsult",
+    world: { surface: "#0f4f52", light: "#2bb5a8", accent: "#a8f5ea" },
+    status: "active",
+    context: { fr: "Projet d’équipe — plateforme de santé", en: "Team project — health platform" },
+    role: { fr: "Membre de l’équipe de réalisation", en: "Member of the delivery team" },
+    period: { fr: "Depuis octobre 2026", en: "Since October 2026" },
+    summary: {
+      fr: "Une plateforme de santé : tickets de consultation, dossier médical partagé, ordonnances numériques et pharmacies de garde, pour les patients et les soignants.",
+      en: "A health platform: consultation tickets, a shared medical record, digital prescriptions and on-duty pharmacies, for patients and caregivers.",
+    },
+    figures: [
+      { value: "8", label: { fr: "types d’utilisateurs décrits", en: "user types described" } },
+      { value: "4", label: { fr: "documents de conception et un prototype", en: "design documents and a prototype" } },
+    ],
+    stack: ["Flutter", "React", "API REST", "PostgreSQL"],
+    context_long: {
+      fr: "Au Burkina Faso, le parcours de soins repose encore largement sur des dossiers papier et des carnets de santé ; le patient transporte lui-même son histoire médicale d’un centre de santé à l’hôpital.",
+      en: "In Burkina Faso, care still relies largely on paper records and health booklets; patients carry their own medical history from a health centre to the hospital.",
+    },
+    problem: {
+      fr: "Des heures d’attente avant une consultation, des dossiers perdus lors des transferts et des soignants qui ne voient pas l’historique du patient.",
+      en: "Hours of waiting before a consultation, records lost during transfers and caregivers who cannot see the patient’s history.",
+    },
+    objective: {
+      fr: "Un code dossier unique par patient, des tickets de consultation numériques et un dossier médical partagé, protégé et journalisé.",
+      en: "A unique record code per patient, digital consultation tickets and a shared, protected and logged medical record.",
+    },
+    architecture: {
+      intro: {
+        fr: "Architecture proposée dans le cahier des charges : application mobile Flutter pour les patients et le terrain, plateforme web pour les professionnels, API REST sécurisée et base PostgreSQL. Les choix définitifs se valident en phase de conception.",
+        en: "Architecture proposed in the specification: a Flutter mobile app for patients and field agents, a web platform for professionals, a secured REST API and a PostgreSQL database. Final choices are validated during design.",
+      },
+      flow: [
+        { label: { fr: "Patient", en: "Patient" }, detail: { fr: "Ticket de consultation, dossier médical, ordonnances et pharmacies sur mobile.", en: "Consultation ticket, medical record, prescriptions and pharmacies on mobile." } },
+        { label: { fr: "Accueil et soignants", en: "Front desk and caregivers" }, detail: { fr: "File du jour, recherche du patient, consultation et références.", en: "Daily queue, patient search, consultation and referrals." } },
+        { label: { fr: "Pharmacie", en: "Pharmacy" }, detail: { fr: "Lecture des ordonnances reçues, garde et horaires.", en: "Reading received prescriptions, on-duty hours." } },
+        { label: { fr: "Administration", en: "Administration" }, detail: { fr: "Structures, droits par rôle et journal des accès.", en: "Facilities, role-based rights and access log." } },
+      ],
+    },
+    technologies: [
+      { group: { fr: "Proposées", en: "Proposed" }, items: ["Flutter", "React", "API REST (OAuth2, OpenAPI)", "PostgreSQL", "OpenStreetMap"] },
+      { group: { fr: "Conception", en: "Design" }, items: ["Cahier des charges", "Guide fonctionnel", "Charte graphique", "Prototype HTML"] },
+    ],
+    features: [
+      { fr: "Tickets de consultation numériques pour réduire l’attente", en: "Digital consultation tickets to reduce waiting" },
+      { fr: "Dossier médical partagé, accessible selon le rôle et journalisé", en: "Shared medical record, role-based and logged" },
+      { fr: "Ordonnances numériques transmises aux pharmacies", en: "Digital prescriptions sent to pharmacies" },
+      { fr: "Pharmacies de garde sur la carte", en: "On-duty pharmacies on a map" },
+      { fr: "Mode hors ligne : actions mises en attente puis envoyées au retour du réseau", en: "Offline mode: actions queued and sent when the network returns" },
+    ],
+    screenshots: [],
+    decisions: [
+      {
+        title: { fr: "Écrire avant de coder", en: "Write before coding" },
+        why: {
+          fr: "Chaque exigence porte un identifiant et une priorité ; le guide fonctionnel décrit chaque parcours écran par écran et sert de base à la recette.",
+          en: "Each requirement has an identifier and a priority; the functional guide describes every flow screen by screen and drives acceptance testing.",
+        },
+      },
+    ],
+    challenges: [],
+    result: {
+      fr: "Pré-lancement : cahier des charges, guide fonctionnel, charte graphique et prototype HTML réalisés ; le développement est en cours.",
+      en: "Pre-launch: specification, functional guide, visual identity and HTML prototype done; development is in progress.",
+    },
+    evolution: [
+      { fr: "Développement du socle : comptes, identification du patient, dossier médical", en: "Core development: accounts, patient identification, medical record" },
+      { fr: "Essais sur le terrain avec des structures de santé", en: "Field trials with health facilities" },
+    ],
+    repo: { fr: "Dépôt d’équipe privé", en: "Private team repository" },
+    pending: ["Rôle personnel précis dans l’équipe"],
+  },
+  {
+    slug: "scolarite",
+    code: "009",
+    name: "Scolarité",
+    world: { surface: "#2a3470", light: "#6a7ee0", accent: "#c9d2ff" },
+    status: "active",
+    context: { fr: "Application web — gestion scolaire", en: "Web app — school management" },
+    role: { fr: "Conception et développement", en: "Design and development" },
+    period: null,
+    summary: {
+      fr: "Une application web pour gérer la scolarité d’un établissement, en cours de développement.",
+      en: "A web app to manage a school’s administration, under development.",
+    },
+    figures: [],
+    stack: ["Python", "Django"],
+    context_long: {
+      fr: "Projet en cours de construction, sur la même base technique que le site FasoDigit.",
+      en: "A project under construction, on the same technical base as the FasoDigit site.",
+    },
+    problem: {
+      fr: "Le suivi administratif d’un établissement scolaire se fait encore souvent sur papier ou dans des tableurs séparés.",
+      en: "A school’s administration is still often tracked on paper or in separate spreadsheets.",
+    },
+    objective: {
+      fr: "Rassembler le suivi de la scolarité dans une seule application web.",
+      en: "Bring school administration into a single web application.",
+    },
+    architecture: {
+      intro: {
+        fr: "Projet Django : un projet de configuration et une application dédiée à l’éducation, prêts à recevoir les modèles de données.",
+        en: "A Django project: a configuration project and an education app, ready for the data models.",
+      },
+      flow: [],
+    },
+    technologies: [{ group: { fr: "Application", en: "Application" }, items: ["Python", "Django"] }],
+    features: [],
+    screenshots: [],
+    decisions: [],
+    challenges: [],
+    result: {
+      fr: "Pré-lancement : structure Django en place, fonctionnalités en cours de développement.",
+      en: "Pre-launch: Django structure in place, features under development.",
+    },
+    evolution: [],
+    repo: { fr: "Non publié", en: "Not published" },
+    pending: ["Fonctionnalités prévues", "Établissement ou public visé", "Période du projet"],
+  },
+  {
+    slug: "centre-commercial",
+    code: "010",
+    name: "SuperMarché",
+    world: { surface: "#5e1f3b", light: "#d2557f", accent: "#ffc0d4" },
+    status: "active",
+    context: { fr: "Projet d’équipe — IAM Ouaga · application de bureau", en: "Team project — IAM Ouaga · desktop app" },
+    role: { fr: "Développement, dans une équipe de cinq", en: "Development, in a team of five" },
+    period: { fr: "2025", en: "2025" },
+    summary: {
+      fr: "Une application de caisse et de stock pour un centre commercial de Ouagadougou : facture avec TVA calculée, fichier clients et gestion des produits.",
+      en: "A till and stock app for a shopping centre in Ouagadougou: invoices with computed VAT, a customer file and product management.",
+    },
+    figures: [
+      { value: "4", label: { fr: "tables MySQL : clients, produits, factures, lignes", en: "MySQL tables: customers, products, invoices, lines" } },
+      { value: "18 %", label: { fr: "TVA calculée sur chaque facture", en: "VAT computed on every invoice" } },
+    ],
+    stack: ["Python", "Tkinter", "MySQL"],
+    context_long: {
+      fr: "Projet réalisé en équipe à l’Institut Africain de Management de Ouagadougou, autour de la gestion d’un supermarché.",
+      en: "A team project at the African Institute of Management in Ouagadougou, around running a supermarket.",
+    },
+    problem: {
+      fr: "Stock suivi à la main, calculs de taxe imprécis et aucun suivi des clients.",
+      en: "Stock tracked by hand, inaccurate tax calculations and no customer tracking.",
+    },
+    objective: {
+      fr: "Automatiser la caisse et la facturation, calculer la TVA et garder l’historique des clients et des produits.",
+      en: "Automate the till and invoicing, compute VAT and keep a history of customers and products.",
+    },
+    architecture: {
+      intro: {
+        fr: "Application de bureau Python : interface Tkinter, couche d’accès aux données avec mysql-connector, base MySQL.",
+        en: "A Python desktop app: Tkinter interface, data-access layer with mysql-connector, MySQL database.",
+      },
+      flow: [
+        { label: { fr: "Caisse", en: "Till" }, detail: { fr: "Client, produits et quantités ajoutés au panier.", en: "Customer, products and quantities added to the cart." } },
+        { label: { fr: "Facture", en: "Invoice" }, detail: { fr: "Total brut, TVA de 18 % et total net calculés, facture enregistrée et imprimable.", en: "Gross total, 18% VAT and net total computed, invoice saved and printable." } },
+        { label: { fr: "Stock", en: "Stock" }, detail: { fr: "Espace d’administration : ajouter, modifier ou supprimer un produit.", en: "Admin area: add, edit or delete a product." } },
+      ],
+    },
+    technologies: [
+      { group: { fr: "Application", en: "Application" }, items: ["Python", "Tkinter", "Pillow"] },
+      { group: { fr: "Données", en: "Data" }, items: ["MySQL", "mysql-connector"] },
+    ],
+    features: [
+      { fr: "Fiche client retrouvée par numéro de téléphone", en: "Customer record found by phone number" },
+      { fr: "Panier, facture numérotée et calcul automatique de la TVA", en: "Cart, numbered invoice and automatic VAT calculation" },
+      { fr: "Enregistrement des factures et de leurs lignes en base", en: "Invoices and their lines saved in the database" },
+      { fr: "Gestion du stock : ajout, modification et suppression des produits", en: "Stock management: add, edit and delete products" },
+    ],
+    screenshots: [],
+    decisions: [],
+    challenges: [],
+    result: {
+      fr: "Pré-lancement : caisse, facturation et gestion du stock développées et présentées à l’IAM ; le projet continue.",
+      en: "Pre-launch: till, invoicing and stock management built and presented at IAM; the project continues.",
+    },
+    evolution: [
+      { fr: "Tableau de bord des ventes", en: "Sales dashboard" },
+      { fr: "Version mobile", en: "Mobile version" },
+    ],
+    repo: { fr: "Non publié", en: "Not published" },
+    pending: [],
   },
 ];
 

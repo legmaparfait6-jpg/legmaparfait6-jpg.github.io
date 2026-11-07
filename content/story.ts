@@ -116,8 +116,8 @@ export const method = {
       name: "Build",
       text: { fr: "Développer, tester, versionner.", en: "Build, test, version." },
       proof: {
-        fr: "FasoCommerce : 207 tests backend automatisés, intégration continue à chaque envoi.",
-        en: "FasoCommerce: 207 automated backend tests, continuous integration on every push.",
+        fr: "FasoCommerce : 453 tests backend automatisés, intégration continue à chaque envoi.",
+        en: "FasoCommerce: 453 automated backend tests, continuous integration on every push.",
       },
     },
     {

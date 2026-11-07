@@ -4,7 +4,16 @@
 
 .mission-hero__grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 48px;
+}
+
+/* Un nom long (« FasoCommerce ») ne doit pas élargir la fiche sur téléphone :
+   le titre suit la largeur de l'écran. */
+@media (max-width: 599px) {
+  .mission-hero__title {
+    font-size: min(var(--fs-display), 15vw);
+  }
 }
 
 @media (min-width: 1000px) {
@@ -115,7 +124,22 @@
   overflow: hidden;
 }
 
+.mission-visual__world {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+
+.mission-visual--with-brand {
+  padding-top: 18px;
+}
+
 .mission-visual__code {
+  position: relative;
+  z-index: 1;
   font-size: clamp(6rem, 4rem + 8vw, 9.5rem);
   font-weight: 600;
   letter-spacing: -0.06em;
@@ -125,11 +149,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+.mission-visual__brand {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: min(82%, 260px);
+  max-height: 66%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 24px rgb(41 160 230 / 0.16));
+}
+
 .mission-visual__flow {
   position: absolute;
   left: 18px;
   right: 18px;
   bottom: 16px;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;

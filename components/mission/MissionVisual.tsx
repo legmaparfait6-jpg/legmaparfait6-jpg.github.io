@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Mission } from "@/content/missions";
+import { WorldIllustration } from "@/components/mission/WorldIllustration";
 import { type Lang, t } from "@/lib/i18n";
 
 /**
@@ -22,8 +23,20 @@ export function MissionVisual({ mission, lang }: { mission: Mission; lang: Lang 
 
   const steps = mission.architecture.flow;
   return (
-    <div className="mission-visual mission-visual--glyph" aria-hidden="true">
-      <span className="mission-visual__code">{mission.code}</span>
+    <div className={`mission-visual mission-visual--glyph${mission.brand ? " mission-visual--with-brand" : ""}`} aria-hidden={mission.brand ? undefined : true}>
+      <WorldIllustration slug={mission.slug} palette={mission.world} className="mission-visual__world" />
+      {mission.brand ? (
+        <img
+          className="mission-visual__brand"
+          src={mission.brand.src}
+          alt={t(mission.brand.alt, lang)}
+          width={mission.brand.width}
+          height={mission.brand.height}
+          decoding="async"
+        />
+      ) : (
+        <span className="mission-visual__code">{mission.code}</span>
+      )}
       <ol className="mission-visual__flow" style={{ "--n": steps.length } as CSSProperties}>
         {steps.map((step, i) => (
           <li key={step.label.en} style={{ "--i": i } as CSSProperties}>

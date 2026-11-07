@@ -2,6 +2,7 @@ import { STATUS_LABEL, type MissionStatus } from "@/content/missions";
 import { type Lang, t } from "@/lib/i18n";
 
 const DOT: Partial<Record<MissionStatus, string>> = {
+  live: "dot--signal",
   delivered: "dot--signal",
   active: "dot--progress",
 };

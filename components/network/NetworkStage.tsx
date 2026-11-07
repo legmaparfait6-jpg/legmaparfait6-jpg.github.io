@@ -168,17 +168,24 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
   useEffect(() => {
     const engine = engineRef.current;
     if (!ready || !engine) return;
+    const stage = canvasRef.current?.parentElement;
+    const setFormation = (formation: Formation) => {
+      if (stage) stage.dataset.formation = formation;
+    };
 
     if (/\/cv\/?$/.test(pathname)) {
+      setFormation("galaxy");
       engine.setState({ formation: "galaxy", opacity: 0 });
       return;
     }
     const mission = pathname.match(/\/missions\/([^/]+)/);
     if (mission) {
+      setFormation("mission");
       engine.setState({ formation: "mission", opacity: 0.2, slug: mission[1] });
       return;
     }
 
+    setFormation("galaxy");
     engine.setState({ formation: "galaxy", opacity: 1, portrait: true });
     const sections = Object.keys(SECTION_STATE)
       .map((id) => document.getElementById(id))
@@ -188,6 +195,7 @@ export function NetworkStage({ graph }: { graph: GraphData }) {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const [formation, opacity] = SECTION_STATE[entry.target.id]!;
+          setFormation(formation);
           engine.setState({ formation, opacity, portrait: entry.target.id === "home" });
         }
       },

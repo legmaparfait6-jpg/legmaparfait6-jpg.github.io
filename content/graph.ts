@@ -1,4 +1,4 @@
-import { STATUS_LABEL, missions } from "@/content/missions";
+import { STATUS_LABEL, missions, type MissionWorld } from "@/content/missions";
 import { skillId, skillLayers, skillName } from "@/content/skills";
 import { type Lang, t } from "@/lib/i18n";
 
@@ -14,6 +14,7 @@ export type GraphNode = {
   kind: "mission" | "skill";
   layer: number;
   missions: string[];
+  world?: MissionWorld;
 };
 
 export type GraphData = {
@@ -37,6 +38,7 @@ export function buildGraph(lang: Lang): GraphData {
       kind: "mission",
       layer: -1,
       missions: [m.slug],
+      world: m.world,
     });
   });
 

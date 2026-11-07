@@ -5,10 +5,34 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { missions } from "@/content/missions";
 import { transmissionFor } from "@/content/transmissions";
 import { RadioTrigger } from "@/components/voice/RadioTrigger";
+import { WorldIllustration } from "@/components/mission/WorldIllustration";
 import { archive, ui } from "@/content/story";
 import { type Lang, t } from "@/lib/i18n";
 
 export function MissionArchive({ lang }: { lang: Lang }) {
+  const externalLinks = (mission: (typeof missions)[number]) => [
+    ...(mission.website
+      ? [{
+          href: mission.website,
+          label: { fr: "Site", en: "Website" },
+          accessibleLabel: {
+            fr: `Ouvrir le site public de ${mission.name} dans un nouvel onglet`,
+            en: `Open the public ${mission.name} website in a new tab`,
+          },
+        }]
+      : []),
+    ...(mission.repository
+      ? [{
+          href: mission.repository,
+          label: { fr: "GitHub", en: "GitHub" },
+          accessibleLabel: {
+            fr: `Ouvrir le dépôt GitHub de ${mission.name} dans un nouvel onglet`,
+            en: `Open the ${mission.name} GitHub repository in a new tab`,
+          },
+        }]
+      : []),
+  ];
+
   return (
     <Section id="projects" index="05" eyebrow={t(archive.eyebrow, lang)} title={t(archive.title, lang)}>
       <p className="archive__hint meta" aria-hidden="true">
@@ -18,6 +42,7 @@ export function MissionArchive({ lang }: { lang: Lang }) {
         {missions.map((mission, i) => {
           const featured = mission.screenshots.length > 0;
           const cover = mission.screenshots[0];
+          const links = externalLinks(mission);
           return (
             <li
               key={mission.slug}
@@ -56,9 +81,43 @@ export function MissionArchive({ lang }: { lang: Lang }) {
               </div>
 
               <div className="mission-row__aside">
+                {!featured ? (
+                  <div className="mission-row__world">
+                    <WorldIllustration slug={mission.slug} palette={mission.world} className="mission-row__world-art" />
+                    {mission.brand ? (
+                      <img
+                        className="mission-row__brand"
+                        src={mission.brand.src}
+                        alt=""
+                        aria-hidden="true"
+                        width={mission.brand.width}
+                        height={mission.brand.height}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
                 {featured && cover ? (
                   <div className="mission-row__visual phone" aria-hidden="true">
                     <img src={cover.src} alt="" width={cover.width} height={cover.height} loading="lazy" decoding="async" />
+                  </div>
+                ) : null}
+                {links.length > 0 ? (
+                  <div className="mission-row__external-links">
+                    {links.map((link) => (
+                      <a
+                        key={link.href}
+                        className="mission-row__external"
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.accessibleLabel[lang]}
+                      >
+                        {link.label[lang]}
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    ))}
                   </div>
                 ) : null}
                 <span className="mission-row__go" aria-hidden="true">

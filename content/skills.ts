@@ -27,6 +27,10 @@ const FC = "fasocommerce";
 const FX = "forexsaas";
 const FD = "fasodigit";
 const TX = "taxi-compteur";
+const CB = "codeburkina";
+const JL = "jl-express";
+const SC = "scolarite";
+const CC = "centre-commercial";
 
 export const PROOF_LABEL: Record<Proof, L> = {
   mission: { fr: "Utilisé en mission", en: "Used in a mission" },
@@ -61,14 +65,14 @@ export const skillLayers: SkillLayer[] = [
     label: { fr: "Services & API", en: "Services & APIs" },
     hint: { fr: "La logique métier et les contrats d'échange", en: "Business logic and data contracts" },
     skills: [
-      { name: "Python", level: VERY_GOOD, proof: "mission", missions: [SUP, FC, FX] },
+      { name: "Python", level: VERY_GOOD, proof: "mission", missions: [SUP, FC, FX, FD, CC, SC] },
       { name: "FastAPI", proof: "mission", missions: [FC, FX] },
       { name: "Flask", proof: "mission", missions: [SUP] },
       { name: "API REST", proof: "mission", missions: [FC, FX] },
       { name: "Auth JWT", proof: "mission", missions: [FC, FX] },
       { name: "Celery", proof: "mission", missions: [FC, FX] },
       { name: "Laravel", level: INTERMEDIATE, proof: "practiced", missions: [] },
-      { name: "Django", proof: "notions", missions: [FD] },
+      { name: "Django", proof: "mission", missions: [FD, SC] },
     ],
   },
   {
@@ -76,9 +80,9 @@ export const skillLayers: SkillLayer[] = [
     label: { fr: "Données", en: "Data" },
     hint: { fr: "Stocker, versionner, interroger", en: "Store, version, query" },
     skills: [
-      { name: "SQL", proof: "mission", missions: [SUP, FC, FX] },
-      { name: "PostgreSQL", proof: "mission", missions: [FC, FX] },
-      { name: "MySQL", proof: "mission", missions: [SUP] },
+      { name: "SQL", proof: "mission", missions: [SUP, FC, FX, FD, CC] },
+      { name: "PostgreSQL", proof: "mission", missions: [FC, FX, FD] },
+      { name: "MySQL", proof: "mission", missions: [SUP, CC] },
       { name: "SQLAlchemy", proof: "mission", missions: [SUP, FC, FX] },
       { name: "Alembic", proof: "mission", missions: [FC, FX] },
       { name: "Redis", proof: "mission", missions: [FC, FX] },
@@ -90,7 +94,7 @@ export const skillLayers: SkillLayer[] = [
     label: { fr: "Mobile", en: "Mobile" },
     hint: { fr: "L'application dans la poche", en: "The app in your pocket" },
     skills: [
-      { name: "Flutter", proof: "mission", missions: [TX] },
+      { name: "Flutter", proof: "mission", missions: [TX, CB, JL] },
       { name: "Firebase", proof: "mission", missions: [TX] },
       { name: "Ionic", proof: "notions", missions: [] },
     ],
@@ -111,7 +115,7 @@ export const skillLayers: SkillLayer[] = [
     label: { fr: "Livraison", en: "Delivery" },
     hint: { fr: "Tester, versionner, déployer", en: "Test, version, ship" },
     skills: [
-      { name: "Git / GitHub", proof: "mission", missions: [SUP, FC] },
+      { name: "Git / GitHub", proof: "mission", missions: [SUP, FC, FD, JL] },
       { name: "GitHub Actions", proof: "mission", missions: [FC] },
       { name: "Docker", proof: "mission", missions: [FC, FX] },
       { name: "pytest", proof: "mission", missions: [FC, FX] },

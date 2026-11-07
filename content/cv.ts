@@ -33,8 +33,8 @@ export const cv = {
   } satisfies L,
 
   profile: {
-    fr: "Développeur Full-Stack en dernière année de Licence d'Informatique de Gestion. En stage chez Moov Africa, conception d'une application de supervision réseau complète : découverte des équipements, collecte SNMP, tickets avec SLA et escalade automatique. Créateur de FasoCommerce, plateforme SaaS modulaire en pré-lancement (15 modules, 207 tests backend). Intègre l'IA et l'automatisation là où elles apportent une vraie valeur.",
-    en: "Full-stack developer in the final year of a Business Computing degree. During an internship at Moov Africa, designed a complete network monitoring application: device discovery, SNMP collection, SLA-driven tickets and automatic escalation. Creator of FasoCommerce, a modular SaaS platform in pre-launch (15 modules, 207 backend tests). Brings in AI and automation where they add real value.",
+    fr: "Développeur Full-Stack en dernière année de Licence d'Informatique de Gestion. En stage chez Moov Africa, conception d'une application de supervision réseau complète : découverte des équipements, collecte SNMP, tickets avec SLA et escalade automatique. Créateur de FasoCommerce, plateforme SaaS modulaire en ligne (15 modules, 453 tests backend), et de JL EXPRESS, application mobile livrée à un client. Intègre l'IA et l'automatisation là où elles apportent une vraie valeur.",
+    en: "Full-stack developer in the final year of a Business Computing degree. During an internship at Moov Africa, designed a complete network monitoring application: device discovery, SNMP collection, SLA-driven tickets and automatic escalation. Creator of FasoCommerce, a live modular SaaS platform (15 modules, 453 backend tests), and of JL EXPRESS, a mobile app delivered to a client. Brings in AI and automation where they add real value.",
   } satisfies L,
 
   experience: [
@@ -66,15 +66,29 @@ export const cv = {
 
   projects: [
     {
+      name: "JL EXPRESS",
+      status: { fr: "Livré", en: "Delivered" } as L,
+      desc: { fr: "Application mobile de gestion pour un coursier (client)", en: "Management mobile app for a courier (client)" },
+      stack: "Flutter · Dart · SharedPreferences · PDF",
+      period: { fr: "Octobre 2026", en: "October 2026" } as L | null,
+      metrics: [] as L[],
+      bullets: [
+        {
+          fr: "**Missions, clients, argent du jour**, monnaie à rendre, reçus **PDF** et **studio** de visuels WhatsApp ; application Android livrée au client.",
+          en: "**Jobs, clients, daily money**, change calculation, **PDF** receipts and a WhatsApp visual **studio**; Android app delivered to the client.",
+        },
+      ] satisfies L[],
+    },
+    {
       name: "FasoCommerce",
-      status: { fr: "Pré-lancement", en: "Pre-launch" } as L,
+      status: { fr: "En ligne", en: "Live" } as L,
       desc: { fr: "Plateforme SaaS de gestion pour commerces et services", en: "SaaS management platform for shops and services" },
       stack: "Next.js · TypeScript · FastAPI · PostgreSQL · Docker",
       period: { fr: "Depuis juin 2026", en: "Since June 2026" } as L | null,
       metrics: [
         { fr: "15 modules", en: "15 modules" },
         { fr: "13 profils métier", en: "13 trade profiles" },
-        { fr: "207 tests backend", en: "207 backend tests" },
+        { fr: "453 tests backend", en: "453 backend tests" },
       ] satisfies L[],
       bullets: [
         {

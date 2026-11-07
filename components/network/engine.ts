@@ -18,10 +18,14 @@ import {
   Mesh,
   PerspectiveCamera,
   Points,
+  RingGeometry,
   Scene,
   ShaderMaterial,
+  SphereGeometry,
   Vector2,
   Vector3,
+  DoubleSide,
+  MeshBasicMaterial,
   WebGLRenderer,
   WebGLRenderTarget,
 } from "three";
@@ -90,7 +94,56 @@ const FRAGMENT = /* glsl */ `
   }
 `;
 
+const WORLD_VERTEX = /* glsl */ `
+  varying vec3 vNormal;
+  varying vec3 vPoint;
+  void main() {
+    vNormal = normalize(normalMatrix * normal);
+    vPoint = position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const WORLD_FRAGMENT = /* glsl */ `
+  uniform vec3 uSurface;
+  uniform vec3 uLight;
+  uniform float uSeed;
+  uniform float uOpacity;
+  varying vec3 vNormal;
+  varying vec3 vPoint;
+  void main() {
+    float bands = sin((vPoint.y * 5.0 + sin(vPoint.x * 4.0 + uSeed) * 0.16 + sin(vPoint.z * 3.0) * 0.12) * 8.0);
+    float terrain = smoothstep(-0.35, 0.62, bands);
+    vec3 base = mix(uSurface * 0.78, uLight, terrain * 0.42);
+    vec3 n = normalize(vNormal);
+    float day = max(dot(n, normalize(vec3(-0.38, 0.32, 0.86))), 0.0);
+    float rim = pow(1.0 - max(n.z, 0.0), 2.6);
+    vec3 color = base * (0.15 + day * 0.92) + uLight * rim * 0.12;
+    gl_FragColor = vec4(color, uOpacity);
+  }
+`;
+
+const ATMOSPHERE_FRAGMENT = /* glsl */ `
+  uniform vec3 uLight;
+  uniform float uOpacity;
+  varying vec3 vNormal;
+  void main() {
+    float rim = pow(1.0 - max(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)), 0.0), 2.0);
+    gl_FragColor = vec4(uLight, rim * 0.46 * uOpacity);
+  }
+`;
+
 type Packet = { edge: number; t: number; speed: number; forward: boolean; color: Color; strength: number; alive: boolean };
+type WorldBody = {
+  index: number;
+  root: Group;
+  surface: ShaderMaterial;
+  atmosphere: ShaderMaterial;
+  ring: MeshBasicMaterial;
+  moon: MeshBasicMaterial;
+  opacity: number;
+  scale: number;
+};
 
 export class NetworkEngine {
   private renderer: WebGLRenderer;
@@ -123,6 +176,10 @@ export class NetworkEngine {
   private nodeGeometry = new BufferGeometry();
   private lineGeometry = new BufferGeometry();
   private packetGeometry = new BufferGeometry();
+  private worldGeometry: SphereGeometry;
+  private atmosphereGeometry: SphereGeometry;
+  private orbitGeometry: RingGeometry;
+  private worlds: WorldBody[] = [];
   private packets: Packet[] = [];
   private packetPositions: Float32Array;
   private packetColors: Float32Array;
@@ -156,6 +213,7 @@ export class NetworkEngine {
   private raf = 0;
   private running = false;
   private lastTime = 0;
+  private readonly frameInterval: number;
   private elapsed = 0;
   private spawnClock = 0;
   private focusClock = 0;
@@ -168,6 +226,7 @@ export class NetworkEngine {
     private graph: GraphData,
     private options: Options,
   ) {
+    this.frameInterval = options.mobile ? 1000 / 30 : 1000 / 60;
     const random = mulberry32(20260927);
     const ambientCount = options.mobile ? 90 : 210;
     this.realCount = graph.nodes.length;
@@ -183,6 +242,9 @@ export class NetworkEngine {
     const debug = gl.getExtension("WEBGL_debug_renderer_info");
     const gpu = debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : "";
     this.software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpu);
+    this.worldGeometry = new SphereGeometry(1, 22, 16);
+    this.atmosphereGeometry = new SphereGeometry(1.14, 22, 16);
+    this.orbitGeometry = new RingGeometry(1.65, 1.68, 72);
     this.scene.add(this.group);
 
     // --- positions des formations -----------------------------------------
@@ -356,6 +418,66 @@ export class NetworkEngine {
     lines.frustumCulled = false;
     this.group.add(lines);
 
+    // Chaque mission est aussi un monde : un corps teinté, une atmosphère et
+    // une orbite. Les nœuds réels restent au centre et pilotent le clic.
+    graph.nodes.forEach((node, index) => {
+      if (node.kind !== "mission" || !node.world) return;
+      const root = new Group();
+      const surface = new ShaderMaterial({
+        vertexShader: WORLD_VERTEX,
+        fragmentShader: WORLD_FRAGMENT,
+        uniforms: {
+          uSurface: { value: new Color(node.world.surface) },
+          uLight: { value: new Color(node.world.light) },
+          uSeed: { value: index * 1.73 },
+          uOpacity: { value: 0 },
+        },
+        transparent: true,
+        depthWrite: true,
+      });
+      const atmosphere = new ShaderMaterial({
+        vertexShader: WORLD_VERTEX,
+        fragmentShader: ATMOSPHERE_FRAGMENT,
+        uniforms: { uLight: { value: new Color(node.world.accent) }, uOpacity: { value: 0 } },
+        transparent: true,
+        depthWrite: false,
+        side: DoubleSide,
+        blending: AdditiveBlending,
+      });
+      const ring = new MeshBasicMaterial({
+        color: node.world.accent,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: DoubleSide,
+        blending: AdditiveBlending,
+      });
+      const moonMaterial = new MeshBasicMaterial({
+        color: node.world.accent,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      });
+      const halo = new Mesh(this.atmosphereGeometry, atmosphere);
+      halo.renderOrder = 1;
+      const orbit = new Mesh(this.orbitGeometry, ring);
+      orbit.rotation.set(0.42 + index * 0.035, 0.16, -0.28 + index * 0.11);
+      orbit.renderOrder = 1;
+      const planet = new Mesh(this.worldGeometry, surface);
+      planet.rotation.set(0.12, index * 0.7, 0.08);
+      planet.renderOrder = 2;
+      const moon = new Mesh(this.worldGeometry, moonMaterial);
+      moon.scale.setScalar(0.075);
+      moon.position.set(1.84, 0, 0);
+      moon.renderOrder = 2;
+      root.add(orbit, halo, planet, moon);
+      root.scale.setScalar(0.2);
+      root.visible = false;
+      this.group.add(root);
+      this.worlds.push({ index, root, surface, atmosphere, ring, moon: moonMaterial, opacity: 0, scale: 0.2 });
+    });
+
     // --- paquets -------------------------------------------------------------
     const packetCount = options.mobile ? 70 : 160;
     for (let p = 0; p < packetCount; p++) {
@@ -385,6 +507,10 @@ export class NetworkEngine {
     this.lastTime = performance.now();
     const loop = (now: number) => {
       if (!this.running) return;
+      if (now - this.lastTime < this.frameInterval) {
+        this.raf = requestAnimationFrame(loop);
+        return;
+      }
       const dt = Math.min((now - this.lastTime) / 1000, 0.05);
       this.lastTime = now;
       this.update(dt);
@@ -578,6 +704,15 @@ export class NetworkEngine {
     this.nodeGeometry.dispose();
     this.lineGeometry.dispose();
     this.packetGeometry.dispose();
+    this.worldGeometry.dispose();
+    this.atmosphereGeometry.dispose();
+    this.orbitGeometry.dispose();
+    this.worlds.forEach((world) => {
+      world.surface.dispose();
+      world.atmosphere.dispose();
+      world.ring.dispose();
+      world.moon.dispose();
+    });
     this.material.dispose();
     this.lineMaterial.dispose();
     this.renderer.dispose();
@@ -625,6 +760,7 @@ export class NetworkEngine {
 
     this.updateNodes(time, dt);
     this.updateLines(dt);
+    this.updateWorlds(dt, time);
     this.updatePackets(dt, time);
     this.updateCamera(dt, desktop);
     this.updateHover();
@@ -796,6 +932,31 @@ export class NetworkEngine {
         this.lineColors[o + 1] = this.lineColors[o + 1]! + (color.g - this.lineColors[o + 1]!) * k;
         this.lineColors[o + 2] = this.lineColors[o + 2]! + (color.b - this.lineColors[o + 2]!) * k;
       }
+    }
+  }
+
+  private updateWorlds(dt: number, time: number) {
+    const { formation, slug } = this.state;
+    for (const world of this.worlds) {
+      const node = this.graph.nodes[world.index]!;
+      const focused = formation === "mission" && node.missions.includes(slug ?? "");
+      const gain =
+        formation === "clusters" ? 0.92 :
+        formation === "galaxy" ? 0.48 :
+        formation === "finale" ? 0.62 :
+        formation === "mission" ? (focused ? 0.96 : 0.06) : 0.18;
+      const targetOpacity = this.state.opacity * gain;
+      const targetScale = focused ? 0.34 : formation === "clusters" ? 0.28 : formation === "galaxy" ? 0.22 : 0.19;
+      world.opacity = damp(world.opacity, targetOpacity, 3.4, dt);
+      world.scale = damp(world.scale, targetScale, 3.0, dt);
+      world.root.position.set(this.current[world.index * 3]!, this.current[world.index * 3 + 1]!, this.current[world.index * 3 + 2]!);
+      world.root.rotation.y = time * 0.045 + world.index * 0.7;
+      world.root.scale.setScalar(world.scale);
+      world.root.visible = world.opacity > 0.012;
+      world.surface.uniforms.uOpacity!.value = world.opacity;
+      world.atmosphere.uniforms.uOpacity!.value = world.opacity;
+      world.ring.opacity = world.opacity * 0.5;
+      world.moon.opacity = world.opacity * 0.88;
     }
   }
 
